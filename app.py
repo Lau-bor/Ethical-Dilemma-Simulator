@@ -306,87 +306,199 @@ def migrate_db(cursor):
 # URLs públicas de imágenes de Unsplash organizadas por categoría
 # Estas son URLs directas que no requieren API key
 
+# Mapeo de palabras clave a imágenes específicas para selección inteligente
+KEYWORD_IMAGE_MAP = {
+    # Medicina - Dilemas específicos
+    'medicina': {
+        'hospital': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800',
+        'medicamento': 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',
+        'paciente': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800',
+        'doctor': 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800',
+        'tratamiento': 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800',
+        'urgencia': 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
+        'recursos': 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',
+        'salud': 'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800',
+    },
+    'tecnología': {
+        'ia': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800',
+        'algoritmo': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800',
+        'datos': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+        'privacidad': 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800',
+        'redes': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',
+        'aplicación': 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800',
+    },
+    'medio ambiente': {
+        'naturaleza': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
+        'contaminación': 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800',
+        'árboles': 'https://images.unsplash.com/photo-1511497584788-876760111969?w=800',
+        'animales': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800',
+        'energía': 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800',
+        'ecosistema': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800',
+    },
+    'negocios': {
+        'empresa': 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',
+        'trabajo': 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800',
+        'dinero': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800',
+        'oficina': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',
+    },
+    'sociedad': {
+        'gente': 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800',
+        'comunidad': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
+        'familia': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800',
+        'justicia': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800',
+    },
+    'clásico': {
+        'tren': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800',
+        'vías': 'https://images.unsplash.com/photo-1517817748493-49b5541a82ad?w=800',
+        'decisión': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800',
+        'elección': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
+    },
+}
+
 IMAGE_BANK = {
     'medicina': [
-        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800',
-        'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800',
-        'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
-        'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800',
+        'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800',  # Hospital
+        'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',  # Medicamentos
+        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800',  # Paciente
+        'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800',  # Doctor
+        'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800',  # Tratamiento
+        'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',  # Urgencia
+        'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',  # Recursos médicos
+        'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800',  # Salud
     ],
     'tecnología': [
-        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',
-        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
-        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',
-        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800',
+        'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800',  # IA/Cerebro
+        'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800',  # Algoritmos
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',  # Datos
+        'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800',  # Privacidad
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',  # Redes
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800',  # App desarrollo
     ],
     'medio ambiente': [
-        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
-        'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',
-        'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=800',
-        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800',
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',  # Naturaleza
+        'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800',  # Contaminación
+        'https://images.unsplash.com/photo-1511497584788-876760111969?w=800',  # Árboles
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800',  # Ecosistema
+        'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800',  # Energía
+        'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',  # Planeta
     ],
     'negocios': [
-        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',
-        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800',
-        'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
-        'https://images.unsplash.com/photo-1553484771-371a605b060b?w=800',
+        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',  # Empresa
+        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800',  # Trabajo
+        'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800',  # Dinero
+        'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',  # Oficina
+        'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',  # Reunión
     ],
     'sociedad': [
-        'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800',
-        'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800',
-        'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800',
-        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
+        'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800',  # Gente
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',  # Comunidad
+        'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800',  # Familia
+        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800',  # Justicia
+        'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800',  # Sociedad
     ],
     'clásico': [
-        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
-        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
-        'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800',
+        'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800',  # Tren
+        'https://images.unsplash.com/photo-1517817748493-49b5541a82ad?w=800',  # Vías
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800',  # Decisión
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',  # Elección
     ],
     'educación': [
-        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',
-        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
-        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800',
-        'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800',
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',  # Educación
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',  # Aprendizaje
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800',  # Estudio
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800',  # Escuela
     ],
     'política': [
-        'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800',
-        'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800',
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+        'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800',  # Política
+        'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800',  # Gobierno
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',  # Elecciones
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',  # Democracia
     ],
     'general': [
-        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800',
-        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800',
-        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800',  # General
+        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800',  # Tecnología
+        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',  # Mundo
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',  # Pensamiento
     ]
 }
 
-# Imágenes para marcos éticos (para el análisis)
+# Imágenes para marcos éticos - Representativas conceptualmente de cada filosofía
 ETHICAL_FRAMEWORK_IMAGES = {
-    'utilitarianismo': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600',
-    'deontologia': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600',
-    'autonomia': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',
-    'paternalismo': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600',
-    'ecocentrismo': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600',
-    'antropocentrismo': 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=600'
+    # Utilitarismo: Maximizar bienestar/beneficios para la mayoría (balance, números, beneficios, gráficos)
+    'utilitarianismo': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600',  # Gráficos/estadísticas (maximizar resultados)
+    
+    # Deontología: Deberes y principios morales absolutos (justicia, ley, principios)
+    'deontologia': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600',  # Justicia/balanza de la justicia
+    
+    # Autonomía: Respeto por la libertad y decisiones individuales (libertad, elección, independencia)
+    'autonomia': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',  # Persona independiente/pensando
+    
+    # Paternalismo: Proteger a otros incluso contra su voluntad (cuidado, protección, ayuda)
+    'paternalismo': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600',  # Protección/cuidado familiar
+    
+    # Ecocentrismo: Valor intrínseco del medio ambiente (naturaleza, ecosistema, vida silvestre)
+    'ecocentrismo': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600',  # Naturaleza/medio ambiente
+    
+    # Antropocentrismo: Los humanos son el centro de valor (personas, sociedad, humanidad)
+    'antropocentrismo': 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=600'  # Personas/comunidad humana
 }
 
 def get_dilemma_image(scenario, category='general'):
-    """Obtiene una imagen para el dilema basada en categoría y palabras clave"""
+    """Obtiene una imagen para el dilema basada en categoría y palabras clave del escenario"""
     try:
-        # Normalizar categoría
+        # Normalizar categoría y escenario
         category = category.lower() if category else 'general'
+        scenario_lower = scenario.lower() if scenario else ''
         
-        # Si la categoría existe en el banco de imágenes, usar imágenes de esa categoría
+        # Intentar encontrar imagen por palabras clave específicas
+        if category in KEYWORD_IMAGE_MAP:
+            keyword_map = KEYWORD_IMAGE_MAP[category]
+            
+            # Buscar palabras clave en el escenario
+            for keyword, image_url in keyword_map.items():
+                # Buscar variaciones de la palabra clave
+                keyword_variations = [
+                    keyword,
+                    keyword + 's',  # plural
+                    keyword + 'es',  # plural español
+                ]
+                
+                # También buscar en español común
+                if keyword == 'hospital':
+                    keyword_variations.extend(['hospital', 'hospitales'])
+                elif keyword == 'medicamento':
+                    keyword_variations.extend(['medicamento', 'medicamentos', 'medicina', 'fármaco'])
+                elif keyword == 'paciente':
+                    keyword_variations.extend(['paciente', 'pacientes'])
+                elif keyword == 'doctor':
+                    keyword_variations.extend(['doctor', 'médico', 'médica', 'doctores'])
+                elif keyword == 'tratamiento':
+                    keyword_variations.extend(['tratamiento', 'tratamientos', 'terapia'])
+                elif keyword == 'recursos':
+                    keyword_variations.extend(['recurso', 'recursos', 'limitado', 'limitados', 'asignar', 'asignación', 'distribuir'])
+                elif keyword == 'medicamento':
+                    keyword_variations.extend(['medicamento', 'medicamentos', 'fármaco', 'fármacos', 'medicina experimental', 'tratamiento experimental'])
+                elif keyword == 'ia':
+                    keyword_variations.extend(['ia', 'inteligencia artificial', 'artificial', 'algoritmo'])
+                elif keyword == 'datos':
+                    keyword_variations.extend(['dato', 'datos', 'información', 'privacidad'])
+                elif keyword == 'tren':
+                    keyword_variations.extend(['tren', 'trenes', 'vías', 'vía'])
+                elif keyword == 'empresa':
+                    keyword_variations.extend(['empresa', 'empresas', 'compañía', 'negocio'])
+                
+                for variation in keyword_variations:
+                    if variation in scenario_lower:
+                        return image_url
+        
+        # Si no se encontró por palabras clave, usar banco de imágenes de la categoría
         if category in IMAGE_BANK:
             images = IMAGE_BANK[category]
         else:
             images = IMAGE_BANK['general']
         
-        # Seleccionar imagen aleatoria de la categoría
-        # Usar hash del escenario para que el mismo dilema siempre tenga la misma imagen
+        # Seleccionar imagen determinística basada en hash del escenario
+        # Esto asegura que el mismo dilema siempre tenga la misma imagen
         scenario_hash = hash(scenario) % len(images)
         return images[scenario_hash]
         
