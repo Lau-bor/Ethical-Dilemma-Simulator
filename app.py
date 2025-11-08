@@ -442,7 +442,7 @@ def generate_dilemma_with_gemini():
         return None
     
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
         categories = ['medicina', 'tecnología', 'medio ambiente', 'negocios', 'sociedad', 'educación', 'política']
         selected_category = random.choice(categories)
@@ -604,7 +604,7 @@ def analyze_decision_with_ai(dilemma, chosen_option, ethical_framework):
             print("⚠️ Dilema sin escenario para análisis")
             return None
         
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
         scenario_text = dilemma.get('scenario', '')
         if not scenario_text:
