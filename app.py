@@ -252,6 +252,7 @@ def init_db():
             scenario TEXT,
             options TEXT,
             category TEXT,
+            image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -287,10 +288,153 @@ def migrate_db(cursor):
         if 'dilemmas_answered' not in existing_columns_games:
             cursor.execute('ALTER TABLE games ADD COLUMN dilemmas_answered INTEGER DEFAULT 0')
             print("✅ Agregada columna 'dilemmas_answered' a la tabla games")
+        
+        # Verificar columnas existentes en ai_dilemmas_cache
+        cursor.execute('PRAGMA table_info(ai_dilemmas_cache)')
+        existing_columns_cache = [col[1] for col in cursor.fetchall()]
+        
+        # Agregar image_url si no existe
+        if 'image_url' not in existing_columns_cache:
+            cursor.execute('ALTER TABLE ai_dilemmas_cache ADD COLUMN image_url TEXT')
+            print("✅ Agregada columna 'image_url' a la tabla ai_dilemmas_cache")
             
     except Exception as e:
         print(f"⚠️ Error durante la migración: {e}")
         # No lanzar excepción, solo registrar el error
+
+# ==================== SISTEMA DE IMÁGENES ====================
+# URLs públicas de imágenes de Unsplash organizadas por categoría
+# Estas son URLs directas que no requieren API key
+
+IMAGE_BANK = {
+    'medicina': [
+        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800',
+        'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800',
+        'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
+        'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800',
+    ],
+    'tecnología': [
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',
+        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800',
+    ],
+    'medio ambiente': [
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
+        'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',
+        'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=800',
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800',
+    ],
+    'negocios': [
+        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',
+        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800',
+        'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
+        'https://images.unsplash.com/photo-1553484771-371a605b060b?w=800',
+    ],
+    'sociedad': [
+        'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800',
+        'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800',
+        'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800',
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
+    ],
+    'clásico': [
+        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
+        'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800',
+    ],
+    'educación': [
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800',
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800',
+    ],
+    'política': [
+        'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800',
+        'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+    ],
+    'general': [
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800',
+        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800',
+        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
+    ]
+}
+
+# Imágenes para marcos éticos (para el análisis)
+ETHICAL_FRAMEWORK_IMAGES = {
+    'utilitarianismo': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600',
+    'deontologia': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600',
+    'autonomia': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',
+    'paternalismo': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600',
+    'ecocentrismo': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600',
+    'antropocentrismo': 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=600'
+}
+
+def get_dilemma_image(scenario, category='general'):
+    """Obtiene una imagen para el dilema basada en categoría y palabras clave"""
+    try:
+        # Normalizar categoría
+        category = category.lower() if category else 'general'
+        
+        # Si la categoría existe en el banco de imágenes, usar imágenes de esa categoría
+        if category in IMAGE_BANK:
+            images = IMAGE_BANK[category]
+        else:
+            images = IMAGE_BANK['general']
+        
+        # Seleccionar imagen aleatoria de la categoría
+        # Usar hash del escenario para que el mismo dilema siempre tenga la misma imagen
+        scenario_hash = hash(scenario) % len(images)
+        return images[scenario_hash]
+        
+    except Exception as e:
+        print(f"Error obteniendo imagen del dilema: {e}")
+        # Fallback a imagen general
+        return IMAGE_BANK['general'][0]
+
+def get_ethical_framework_image(ethical_framework):
+    """Obtiene una imagen para el marco ético del análisis"""
+    try:
+        framework = ethical_framework.lower() if ethical_framework else 'general'
+        return ETHICAL_FRAMEWORK_IMAGES.get(framework, IMAGE_BANK['general'][0])
+    except Exception as e:
+        print(f"Error obteniendo imagen del marco ético: {e}")
+        return IMAGE_BANK['general'][0]
+
+def cache_dilemma_image(scenario, image_url):
+    """Guarda la URL de imagen en el cache del dilema"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE ai_dilemmas_cache SET image_url = ? WHERE dilemma_text = ?',
+            (image_url, scenario)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error cacheando imagen: {e}")
+
+def get_cached_dilemma_image(scenario):
+    """Obtiene la imagen en cache para un dilema"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT image_url FROM ai_dilemmas_cache WHERE dilemma_text = ?',
+            (scenario,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        return result[0] if result and result[0] else None
+    except Exception as e:
+        print(f"Error obteniendo imagen cacheada: {e}")
+        return None
+
+# ==================== FIN SISTEMA DE IMÁGENES ====================
 
 def generate_dilemma_with_gemini():
     """Generate a new ethical dilemma using Google Gemini"""
@@ -421,12 +565,25 @@ def cache_dilemma(dilemma_data):
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
+        
+        # Obtener imagen para el dilema
+        category = dilemma_data.get('category', 'general')
+        scenario = dilemma_data['scenario']
+        image_url = get_dilemma_image(scenario, category)
+        
         cursor.execute(
-            '''INSERT OR IGNORE INTO ai_dilemmas_cache (dilemma_text, scenario, options, category) 
-               VALUES (?, ?, ?, ?)''',
-            (dilemma_data['scenario'], dilemma_data['scenario'], 
-             json.dumps(dilemma_data['options']), dilemma_data.get('category', 'general'))
+            '''INSERT OR IGNORE INTO ai_dilemmas_cache (dilemma_text, scenario, options, category, image_url) 
+               VALUES (?, ?, ?, ?, ?)''',
+            (scenario, scenario, 
+             json.dumps(dilemma_data['options']), category, image_url)
         )
+        
+        # Si el registro ya existía, actualizar la imagen
+        cursor.execute(
+            'UPDATE ai_dilemmas_cache SET image_url = ? WHERE dilemma_text = ? AND image_url IS NULL',
+            (image_url, scenario)
+        )
+        
         conn.commit()
         conn.close()
     except Exception as e:
@@ -518,7 +675,7 @@ def start_game():
 
 @app.route('/api/get_dilemma', methods=['GET'])
 def get_dilemma():
-    """Get a random ethical dilemma"""
+    """Get a random ethical dilemma with image"""
     # Try Gemini first, then Together AI, then predefined
     ai_dilemma = None
     
@@ -535,9 +692,21 @@ def get_dilemma():
         dilemma['id'] = random.randint(1000, 9999)  # Assign random ID for AI dilemmas
         if 'category' not in dilemma:
             dilemma['category'] = 'general'
+        
+        # Obtener imagen del dilema (verificar cache primero)
+        scenario = dilemma.get('scenario', '')
+        cached_image = get_cached_dilemma_image(scenario)
+        if cached_image:
+            dilemma['image_url'] = cached_image
+        else:
+            dilemma['image_url'] = get_dilemma_image(scenario, dilemma.get('category', 'general'))
     else:
         # Fallback to predefined dilemmas
         dilemma = random.choice(PREDEFINED_DILEMMAS).copy()
+        # Obtener imagen para dilema predefinido
+        scenario = dilemma.get('scenario', '')
+        category = dilemma.get('category', 'general')
+        dilemma['image_url'] = get_dilemma_image(scenario, category)
     
     return jsonify(dilemma)
 
@@ -610,9 +779,13 @@ def make_decision():
         conn.commit()
         conn.close()
         
+        # Obtener imagen para el análisis ético
+        ethical_image_url = get_ethical_framework_image(ethical_framework)
+        
         return jsonify({
             'status': 'success',
-            'analysis': analysis
+            'analysis': analysis,
+            'ethical_framework_image': ethical_image_url
         })
         
     except sqlite3.Error as e:
