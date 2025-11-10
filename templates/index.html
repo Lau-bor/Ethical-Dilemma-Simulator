@@ -139,6 +139,27 @@
             font-size: 1.1em;
         }
 
+        .dilemma-image {
+            width: 100%;
+            max-width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ethical-image {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 15px auto;
+            display: block;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
         .options {
             display: grid;
             gap: 15px;
@@ -246,6 +267,24 @@
             color: #555;
             line-height: 1.6;
             font-size: 0.95em;
+        }
+
+        .analysis-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .analysis-content {
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            .ethical-image {
+                flex-shrink: 0;
+                margin: 0;
+            }
         }
 
         .category-badge {
@@ -410,10 +449,16 @@
                 'general': '📋 General'
             };
             
+            // Construir HTML del dilema con imagen si está disponible
+            const imageHTML = dilemma.image_url 
+                ? `<img src="${dilemma.image_url}" alt="Imagen del dilema" class="dilemma-image" onerror="this.style.display='none'">` 
+                : '';
+            
             dilemmaContainer.innerHTML = `
                 <div class="dilemma-card">
                     <span class="category-badge">${categoryNames[category] || '📋 ' + category}</span>
                     <h2>Dilema #${dilemma.id}</h2>
+                    ${imageHTML}
                     <p>${dilemma.scenario}</p>
                 </div>
             `;
@@ -471,18 +516,33 @@
                 decisionCount++;
                 
                 // Mostrar análisis si está disponible
+                const ethicalImage = result.ethical_framework_image 
+                    ? `<img src="${result.ethical_framework_image}" alt="Marco ético" class="ethical-image" onerror="this.style.display='none'">` 
+                    : '';
+                
                 if (result.analysis) {
                     analysisContainer.innerHTML = `
                         <div class="analysis-card">
                             <h3>💡 Análisis de tu Decisión</h3>
-                            <p>${result.analysis}</p>
+                            <div class="analysis-content">
+                                ${ethicalImage ? `<div>${ethicalImage}</div>` : ''}
+                                <div style="flex: 1;">
+                                    <p><strong>Marco Ético: ${getFrameworkName(option.ethical_value)}</strong></p>
+                                    <p>${result.analysis}</p>
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else {
                     analysisContainer.innerHTML = `
                         <div class="analysis-card">
                             <h3>✅ Decisión Registrada</h3>
-                            <p>Has elegido una opción basada en <strong>${getFrameworkName(option.ethical_value)}</strong>.</p>
+                            <div class="analysis-content">
+                                ${ethicalImage ? `<div>${ethicalImage}</div>` : ''}
+                                <div style="flex: 1;">
+                                    <p>Has elegido una opción basada en <strong>${getFrameworkName(option.ethical_value)}</strong>.</p>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
