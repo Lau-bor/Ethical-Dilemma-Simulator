@@ -11,6 +11,32 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --bg-color: white;
+            --text-color: #333;
+            --text-secondary: #666;
+            --text-tertiary: #555;
+            --border-color: #e0e0e0;
+            --card-bg: #f8f9fa;
+            --option-bg: white;
+            --option-hover: #f0f4ff;
+            --analysis-bg: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --text-color: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #c0c0c0;
+            --border-color: #333;
+            --card-bg: #16213e;
+            --option-bg: #0f3460;
+            --option-hover: #16213e;
+            --analysis-bg: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -19,16 +45,23 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
 
         .container {
-            background: white;
+            background: var(--bg-color);
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px var(--shadow);
             max-width: 800px;
             width: 100%;
             padding: 40px;
             animation: fadeIn 0.6s ease-out;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -45,10 +78,11 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
+            position: relative;
         }
 
         .header h1 {
-            color: #333;
+            color: var(--text-color);
             font-size: 2.5em;
             margin-bottom: 10px;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -58,8 +92,35 @@
         }
 
         .header p {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 1.1em;
+        }
+
+        .dark-mode-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .dark-mode-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.5);
+        }
+
+        .dark-mode-toggle:active {
+            transform: scale(0.95);
         }
 
         .game-setup {
@@ -74,17 +135,19 @@
         .input-group label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: var(--text-color);
             font-weight: 600;
         }
 
         .input-group input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 10px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            background: var(--option-bg);
+            color: var(--text-color);
         }
 
         .input-group input:focus {
@@ -120,21 +183,22 @@
         }
 
         .dilemma-card {
-            background: #f8f9fa;
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 30px;
             margin-bottom: 30px;
             border-left: 5px solid #667eea;
+            transition: background 0.3s ease;
         }
 
         .dilemma-card h2 {
-            color: #333;
+            color: var(--text-color);
             margin-bottom: 15px;
             font-size: 1.5em;
         }
 
         .dilemma-card p {
-            color: #555;
+            color: var(--text-tertiary);
             line-height: 1.6;
             font-size: 1.1em;
         }
@@ -167,8 +231,8 @@
         }
 
         .option-btn {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: var(--option-bg);
+            border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 20px;
             text-align: left;
@@ -176,13 +240,14 @@
             transition: all 0.3s ease;
             font-size: 16px;
             line-height: 1.5;
+            color: var(--text-color);
         }
 
         .option-btn:hover {
             border-color: #667eea;
-            background: #f0f4ff;
+            background: var(--option-hover);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px var(--shadow);
         }
 
         .option-btn.selected {
@@ -192,14 +257,15 @@
         }
 
         .stats {
-            background: #f8f9fa;
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 20px;
             margin-top: 20px;
+            transition: background 0.3s ease;
         }
 
         .stats h3 {
-            color: #333;
+            color: var(--text-color);
             margin-bottom: 15px;
         }
 
@@ -208,7 +274,8 @@
             justify-content: space-between;
             margin-bottom: 10px;
             padding: 8px 0;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
         }
 
         .stat-item:last-child {
@@ -216,7 +283,7 @@
         }
 
         .progress-bar {
-            background: #e0e0e0;
+            background: var(--border-color);
             border-radius: 10px;
             height: 8px;
             overflow: hidden;
@@ -238,12 +305,13 @@
         }
 
         .analysis-card {
-            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+            background: var(--analysis-bg);
             border-left: 5px solid #667eea;
             border-radius: 15px;
             padding: 20px;
             margin: 20px 0;
             animation: slideIn 0.5s ease-out;
+            transition: background 0.3s ease;
         }
 
         @keyframes slideIn {
@@ -264,7 +332,7 @@
         }
 
         .analysis-card p {
-            color: #555;
+            color: var(--text-tertiary);
             line-height: 1.6;
             font-size: 0.95em;
         }
@@ -300,7 +368,7 @@
 
         .decision-counter {
             text-align: center;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 20px;
             font-size: 0.9em;
         }
@@ -332,12 +400,21 @@
             .options {
                 grid-template-columns: 1fr;
             }
+
+            .dark-mode-toggle {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <button class="dark-mode-toggle" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Activar/Desactivar modo oscuro">
+                🌙
+            </button>
             <h1>🧠 Ethical Dilemma Simulator</h1>
             <p>Explora tus principios morales a través de dilemas éticos desafiantes</p>
         </div>
@@ -626,10 +703,10 @@
                 const title = document.createElement('div');
                 title.style.marginBottom = '20px';
                 title.style.paddingBottom = '15px';
-                title.style.borderBottom = '2px solid #e0e0e0';
+                title.style.borderBottom = '2px solid var(--border-color)';
                 title.innerHTML = `
-                    <h2 style="color: #333; margin-bottom: 5px;">📊 Estadísticas de ${stats.player_name}</h2>
-                    <p style="color: #666;">Total de dilemas respondidos: <strong>${stats.total_decisions}</strong></p>
+                    <h2 style="color: var(--text-color); margin-bottom: 5px;">📊 Estadísticas de ${stats.player_name}</h2>
+                    <p style="color: var(--text-secondary);">Total de dilemas respondidos: <strong>${stats.total_decisions}</strong></p>
                 `;
                 statsContainer.appendChild(title);
                 
@@ -658,10 +735,10 @@
                         statItem.innerHTML = `
                             <div>
                                 <strong>${frameworkNames[framework] || framework}</strong>
-                                <div style="font-size: 0.9em; color: #666;">${count} decisiones</div>
+                                <div style="font-size: 0.9em; color: var(--text-secondary);">${count} decisiones</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 1.2em; font-weight: bold;">${percentage}%</div>
+                                <div style="font-size: 1.2em; font-weight: bold; color: var(--text-color);">${percentage}%</div>
                                 <div class="progress-bar" style="width: 100px;">
                                     <div class="progress-fill" style="width: ${percentage}%"></div>
                                 </div>
@@ -699,10 +776,10 @@
                         statItem.innerHTML = `
                             <div>
                                 <strong>${categoryNames[category] || category}</strong>
-                                <div style="font-size: 0.9em; color: #666;">${count} dilemas</div>
+                                <div style="font-size: 0.9em; color: var(--text-secondary);">${count} dilemas</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 1.2em; font-weight: bold;">${percentage}%</div>
+                                <div style="font-size: 1.2em; font-weight: bold; color: var(--text-color);">${percentage}%</div>
                             </div>
                         `;
                         statsContainer.appendChild(statItem);
@@ -737,6 +814,37 @@
                 startGame();
             }
         });
+
+        // Dark mode functionality
+        function toggleDarkMode() {
+            const body = document.body;
+            const toggle = document.getElementById('dark-mode-toggle');
+            const isDarkMode = body.classList.toggle('dark-mode');
+            
+            // Update button icon
+            toggle.textContent = isDarkMode ? '☀️' : '🌙';
+            
+            // Save preference to localStorage
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        // Load dark mode preference on page load
+        function loadDarkModePreference() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const body = document.body;
+            const toggle = document.getElementById('dark-mode-toggle');
+            
+            if (darkMode) {
+                body.classList.add('dark-mode');
+                toggle.textContent = '☀️';
+            } else {
+                body.classList.remove('dark-mode');
+                toggle.textContent = '🌙';
+            }
+        }
+
+        // Initialize dark mode on page load
+        loadDarkModePreference();
     </script>
 </body>
 </html>
