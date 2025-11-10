@@ -5,7 +5,6 @@ import random
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
-import requests
 import google.generativeai as genai
 
 load_dotenv()
@@ -13,9 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 
 DATABASE = 'ethical_game.db'
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyDwWIWhPvjYlCA_fTShKZIZOeqcL6tP6Ro')
-TOGETHER_API_KEY = os.getenv('TOGETHER_API_KEY')
-TOGETHER_API_URL = 'https://api.together.xyz/v1/chat/completions'
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
 
 # Configurar Gemini
 if GOOGLE_API_KEY:
@@ -554,7 +551,8 @@ def generate_dilemma_with_gemini():
         return None
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Usar gemini-2.5-flash (más reciente y estable)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         categories = ['medicina', 'tecnología', 'medio ambiente', 'negocios', 'sociedad', 'educación', 'política']
         selected_category = random.choice(categories)
@@ -616,62 +614,6 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional, sin markdown, sin ex
         print(f"Error generating dilemma with Gemini: {e}")
         return None
 
-def generate_dilemma_with_together():
-    """Generate a new ethical dilemma using Together AI (fallback)"""
-    if not TOGETHER_API_KEY:
-        return None
-    
-    prompt = """
-    Generate a unique ethical dilemma scenario with exactly 2 options. 
-    Each option should represent a different ethical framework (like utilitarianism vs deontology, autonomy vs paternalism, etc.)
-    
-    Return JSON format:
-    {
-        "category": "category_name",
-        "scenario": "detailed ethical scenario",
-        "options": [
-            {"text": "first option text", "ethical_value": "utilitarianism"},
-            {"text": "second option text", "ethical_value": "deontology"}
-        ]
-    }
-    
-    Make it realistic, thought-provoking, and different from common dilemmas.
-    """
-    
-    try:
-        response = requests.post(
-            TOGETHER_API_URL,
-            headers={
-                'Authorization': f'Bearer {TOGETHER_API_KEY}',
-                'Content-Type': 'application/json'
-            },
-            json={
-                'model': 'meta-llama/Llama-3.2-3B-Instruct-Turbo',
-                'messages': [{'role': 'user', 'content': prompt}],
-                'temperature': 0.8,
-                'max_tokens': 500
-            }
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content']
-            
-            try:
-                dilemma_data = json.loads(content)
-                if 'category' not in dilemma_data:
-                    dilemma_data['category'] = 'general'
-                return dilemma_data
-            except json.JSONDecodeError:
-                log_prompt(prompt, content)
-                return None
-        else:
-            return None
-            
-    except Exception as e:
-        print(f"Error generating dilemma with Together AI: {e}")
-        return None
-
 def cache_dilemma(dilemma_data):
     """Cache AI-generated dilemmas to avoid duplicates"""
     try:
@@ -716,7 +658,8 @@ def analyze_decision_with_ai(dilemma, chosen_option, ethical_framework):
             print("⚠️ Dilema sin escenario para análisis")
             return None
         
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Usar gemini-2.5-flash (más reciente y estable)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         scenario_text = dilemma.get('scenario', '')
         if not scenario_text:
@@ -788,16 +731,12 @@ def start_game():
 @app.route('/api/get_dilemma', methods=['GET'])
 def get_dilemma():
     """Get a random ethical dilemma with image"""
-    # Try Gemini first, then Together AI, then predefined
+    # Try Gemini first, then predefined
     ai_dilemma = None
     
-    # Intentar con Gemini (prioritario)
+    # Intentar con Gemini
     if GOOGLE_API_KEY:
         ai_dilemma = generate_dilemma_with_gemini()
-    
-    # Fallback a Together AI si Gemini falla
-    if not ai_dilemma and TOGETHER_API_KEY:
-        ai_dilemma = generate_dilemma_with_together()
     
     if ai_dilemma:
         dilemma = ai_dilemma
@@ -981,7 +920,6 @@ if __name__ == '__main__':
     print("🧠 Ethical Dilemma Simulator starting...")
     print(f"📊 Database initialized: {DATABASE}")
     print(f"🤖 Google Gemini: {'✅ Enabled' if GOOGLE_API_KEY else '❌ Disabled'}")
-    print(f"🤖 Together AI: {'✅ Enabled (fallback)' if TOGETHER_API_KEY else '❌ Disabled'}")
     print(f"📚 Predefined dilemmas: {len(PREDEFINED_DILEMMAS)}")
     print("🚀 Server running on http://localhost:5000")
     app.run(debug=True)
