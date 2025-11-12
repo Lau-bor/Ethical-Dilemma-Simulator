@@ -14,7 +14,7 @@ app = Flask(__name__)
 DATABASE = 'ethical_game.db'
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
 
-# Configurar Gemini
+# Configurar Gemini 
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 

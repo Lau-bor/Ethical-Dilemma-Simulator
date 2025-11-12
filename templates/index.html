@@ -387,6 +387,182 @@
             background: #218838;
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeInOverlay 0.3s ease-out;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeInOverlay {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 1100px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            animation: modalSlideIn 0.4s ease-out;
+            transition: background 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: var(--text-color);
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            max-height: 400px;
+        }
+
+        .modal-image {
+            flex-shrink: 0;
+            width: 400px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-text {
+            flex: 1;
+            color: var(--text-tertiary);
+            line-height: 1.6;
+            font-size: 0.95em;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .modal-text::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-text::-webkit-scrollbar-track {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .modal-text::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .modal-text::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-btn-close {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-btn-close:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .modal-btn-next {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .modal-btn-next:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .modal-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .modal-body {
+                flex-direction: column;
+                gap: 20px;
+                max-height: none;
+            }
+
+            .modal-image {
+                width: 100%;
+                max-width: 350px;
+                height: 250px;
+            }
+
+            .modal-text {
+                text-align: center;
+                max-height: 250px;
+            }
+
+            .modal-content {
+                padding: 30px 20px;
+            }
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -452,6 +628,23 @@
         </div>
     </div>
 
+    <!-- Modal para mostrar el resultado del dilema -->
+    <div id="decision-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✅ Decisión Registrada</h2>
+            </div>
+            <div class="modal-body">
+                <img id="modal-image" src="" alt="Marco ético" class="modal-image" style="display: none;">
+                <div id="modal-text" class="modal-text"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-close" onclick="closeModal()">Cerrar</button>
+                <button class="modal-btn modal-btn-next" onclick="closeModalAndNext()">Siguiente Dilema</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let gameId = null;
         let currentDilemma = null;
@@ -501,12 +694,11 @@
             const dilemmaContainer = document.getElementById('dilemma-container');
             const optionsContainer = document.getElementById('options-container');
             const nextBtn = document.getElementById('next-btn');
-            const analysisContainer = document.getElementById('analysis-container');
             const continueOptions = document.getElementById('continue-options');
             const decisionCounter = document.getElementById('decision-counter');
             
-            // Limpiar análisis anterior
-            analysisContainer.innerHTML = '';
+            // Asegurar que el modal esté cerrado
+            document.getElementById('decision-modal').classList.remove('show');
             continueOptions.classList.add('hidden');
             
             // Actualizar contador
@@ -562,10 +754,6 @@
             // Mark this button as selected
             buttonElement.classList.add('selected');
             
-            // Mostrar indicador de carga
-            const analysisContainer = document.getElementById('analysis-container');
-            analysisContainer.innerHTML = '<div class="analysis-card"><p>🔄 Analizando tu decisión...</p></div>';
-            
             try {
                 const response = await fetch('/api/make_decision', {
                     method: 'POST',
@@ -592,57 +780,8 @@
                 const result = await response.json();
                 decisionCount++;
                 
-                // Mostrar análisis si está disponible
-                const ethicalImage = result.ethical_framework_image 
-                    ? `<img src="${result.ethical_framework_image}" alt="Marco ético" class="ethical-image" onerror="this.style.display='none'">` 
-                    : '';
-                
-                if (result.analysis) {
-                    analysisContainer.innerHTML = `
-                        <div class="analysis-card">
-                            <h3>💡 Análisis de tu Decisión</h3>
-                            <div class="analysis-content">
-                                ${ethicalImage ? `<div>${ethicalImage}</div>` : ''}
-                                <div style="flex: 1;">
-                                    <p><strong>Marco Ético: ${getFrameworkName(option.ethical_value)}</strong></p>
-                                    <p>${result.analysis}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    analysisContainer.innerHTML = `
-                        <div class="analysis-card">
-                            <h3>✅ Decisión Registrada</h3>
-                            <div class="analysis-content">
-                                ${ethicalImage ? `<div>${ethicalImage}</div>` : ''}
-                                <div style="flex: 1;">
-                                    <p>Has elegido una opción basada en <strong>${getFrameworkName(option.ethical_value)}</strong>.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // Habilitar botones nuevamente después de un momento
-                setTimeout(() => {
-                    document.querySelectorAll('.option-btn').forEach(btn => {
-                        btn.disabled = false;
-                    });
-                }, 500);
-                
-                // Mostrar opciones después de un delay
-                setTimeout(() => {
-                    const nextBtn = document.getElementById('next-btn');
-                    const continueOptions = document.getElementById('continue-options');
-                    
-                    if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
-                        nextBtn.classList.remove('hidden');
-                        continueOptions.classList.remove('hidden');
-                    } else {
-                        nextBtn.classList.remove('hidden');
-                    }
-                }, 1500);
+                // Llenar y mostrar el modal
+                showModal(result, option.ethical_value);
                 
             } catch (error) {
                 console.error('Error recording decision:', error);
@@ -658,17 +797,72 @@
                     }
                 }
                 
-                analysisContainer.innerHTML = `
-                    <div class="analysis-card" style="border-left-color: #dc3545;">
-                        <h3>❌ Error</h3>
-                        <p>${errorMessage}</p>
-                        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Por favor, recarga la página si el problema persiste.</p>
-                    </div>
-                `;
+                // Mostrar error en el modal
+                const modalText = document.getElementById('modal-text');
+                const modalImage = document.getElementById('modal-image');
+                modalImage.style.display = 'none';
+                modalText.innerHTML = `<p style="color: #dc3545;">❌ ${errorMessage}</p><p style="font-size: 0.85em; color: var(--text-secondary); margin-top: 10px;">Por favor, recarga la página si el problema persiste.</p>`;
+                document.getElementById('decision-modal').classList.add('show');
+                
                 document.querySelectorAll('.option-btn').forEach(btn => {
                     btn.disabled = false;
                 });
             }
+        }
+
+        function showModal(result, ethicalFramework) {
+            const modal = document.getElementById('decision-modal');
+            const modalImage = document.getElementById('modal-image');
+            const modalText = document.getElementById('modal-text');
+            
+            // Configurar imagen
+            if (result.ethical_framework_image) {
+                modalImage.src = result.ethical_framework_image;
+                modalImage.style.display = 'block';
+                modalImage.onerror = function() {
+                    this.style.display = 'none';
+                };
+            } else {
+                modalImage.style.display = 'none';
+            }
+            
+            // Configurar texto
+            let textContent = '';
+            if (result.analysis) {
+                textContent = `<p><strong>Marco Ético: ${getFrameworkName(ethicalFramework)}</strong></p><p>${result.analysis}</p>`;
+            } else {
+                textContent = `<p>Has elegido una opción basada en <strong>${getFrameworkName(ethicalFramework)}</strong>.</p>`;
+            }
+            modalText.innerHTML = textContent;
+            
+            // Mostrar modal
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('decision-modal');
+            modal.classList.remove('show');
+            
+            // Habilitar botones nuevamente
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            // Mostrar opciones después de cerrar
+            const nextBtn = document.getElementById('next-btn');
+            const continueOptions = document.getElementById('continue-options');
+            
+            if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
+                nextBtn.classList.remove('hidden');
+                continueOptions.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+            }
+        }
+
+        function closeModalAndNext() {
+            closeModal();
+            nextDilemma();
         }
         
         function getFrameworkName(framework) {
@@ -845,6 +1039,23 @@
 
         // Initialize dark mode on page load
         loadDarkModePreference();
+
+        // Cerrar modal al hacer clic en el overlay (fondo oscuro)
+        document.getElementById('decision-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Cerrar modal con la tecla Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('decision-modal');
+                if (modal.classList.contains('show')) {
+                    closeModal();
+                }
+            }
+        });
     </script>
 </body>
 </html>
