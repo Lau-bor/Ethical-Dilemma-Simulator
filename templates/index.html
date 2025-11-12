@@ -958,6 +958,61 @@
                 });
             }
         }
+
+        function showModal(result, ethicalFramework) {
+            const modal = document.getElementById('decision-modal');
+            const modalImage = document.getElementById('modal-image');
+            const modalText = document.getElementById('modal-text');
+            
+            // Configurar imagen
+            if (result.ethical_framework_image) {
+                modalImage.src = result.ethical_framework_image;
+                modalImage.style.display = 'block';
+                modalImage.onerror = function() {
+                    this.style.display = 'none';
+                };
+            } else {
+                modalImage.style.display = 'none';
+            }
+            
+            // Configurar texto
+            let textContent = '';
+            if (result.analysis) {
+                textContent = `<p><strong>Marco Ético: ${getFrameworkName(ethicalFramework)}</strong></p><p>${result.analysis}</p>`;
+            } else {
+                textContent = `<p>Has elegido una opción basada en <strong>${getFrameworkName(ethicalFramework)}</strong>.</p>`;
+            }
+            modalText.innerHTML = textContent;
+            
+            // Mostrar modal
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('decision-modal');
+            modal.classList.remove('show');
+            
+            // Habilitar botones nuevamente
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            // Mostrar opciones después de cerrar
+            const nextBtn = document.getElementById('next-btn');
+            const continueOptions = document.getElementById('continue-options');
+            
+            if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
+                nextBtn.classList.remove('hidden');
+                continueOptions.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+            }
+        }
+
+        function closeModalAndNext() {
+            closeModal();
+            nextDilemma();
+        }
         
         function showAnalysisLoading() {
             const modal = document.getElementById('decision-modal');
