@@ -34,6 +34,11 @@ La ventana debe tener bordes redondeados, sombra suave, fondo oscuro translúcid
 Hacelo usando HTML, CSS y JavaScript directamente en mi index.html (sin cambiar el backend Flask).
 Cuando el backend devuelve la respuesta, en lugar de agregarla al final del cuerpo, que el JavaScript llene el contenido del modal y lo muestre en pantalla.
 
+- Me gustaria que el modal sea horizontal para evitar el scroll
+
+- Quiero que la imagen de modal sea mas grande y que la respuesta de gemini tenga un tamaño de fuente adecuado para evitar que no sea vean los botones
+
+
 -Necesito saber si es posible generar un sistema de logros (como los maneja "Steam" o "Playstation") que no infliga en romper algo en el código
 
 Si es posible preguntame antes de hacer cualquier cosa y comentame lo que hiciste
@@ -55,9 +60,12 @@ Prompt para testeo de uso correcto del modelo de IA:
 -Necesito una archivo de prueba para saber si la conexión con el modelo de IA de Gemini a través de mi api key esta funcionando. Yo la tengo en una archivo .env
 
 
-- Me gustaria que el modal sea horizontal para evitar el scroll
+====================================================
 
-- Quiero que la imagen de modal sea mas grande y que la respuesta de gemini tenga un tamaño de fuente adecuado para evitar que no sea vean los botones
+Prompts para generar el archivo README
 
+-Necesito que revises mi proyecto y realices el README del mismo teniendo en cuenta de resaltar que se utilice la versión 3.12.7 de Python, obviamente explicando como levantar el proyecto y como funciona
+
+-Podes agregarle algunos emojis para que se vea mejor el README?
 
 
