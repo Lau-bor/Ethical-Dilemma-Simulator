@@ -5,7 +5,6 @@ import random
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
-import requests
 import google.generativeai as genai
 
 load_dotenv()
@@ -13,11 +12,9 @@ load_dotenv()
 app = Flask(__name__)
 
 DATABASE = 'ethical_game.db'
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyDwWIWhPvjYlCA_fTShKZIZOeqcL6tP6Ro')
-TOGETHER_API_KEY = os.getenv('TOGETHER_API_KEY')
-TOGETHER_API_URL = 'https://api.together.xyz/v1/chat/completions'
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
 
-# Configurar Gemini
+# Configurar Gemini 
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 
@@ -252,12 +249,42 @@ def init_db():
             scenario TEXT,
             options TEXT,
             category TEXT,
+            image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Tabla para logros disponibles
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            achievement_type TEXT NOT NULL,
+            condition_value TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Tabla para logros desbloqueados por jugadores
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS player_achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_name TEXT NOT NULL,
+            achievement_id INTEGER NOT NULL,
+            unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (achievement_id) REFERENCES achievements (id),
+            UNIQUE(player_name, achievement_id)
         )
     ''')
     
     # Migración: Agregar columnas faltantes si no existen
     migrate_db(cursor)
+    
+    # Inicializar logros predefinidos
+    init_achievements(cursor)
     
     conn.commit()
     conn.close()
@@ -287,10 +314,484 @@ def migrate_db(cursor):
         if 'dilemmas_answered' not in existing_columns_games:
             cursor.execute('ALTER TABLE games ADD COLUMN dilemmas_answered INTEGER DEFAULT 0')
             print("✅ Agregada columna 'dilemmas_answered' a la tabla games")
+        
+        # Verificar columnas existentes en ai_dilemmas_cache
+        cursor.execute('PRAGMA table_info(ai_dilemmas_cache)')
+        existing_columns_cache = [col[1] for col in cursor.fetchall()]
+        
+        # Agregar image_url si no existe
+        if 'image_url' not in existing_columns_cache:
+            cursor.execute('ALTER TABLE ai_dilemmas_cache ADD COLUMN image_url TEXT')
+            print("✅ Agregada columna 'image_url' a la tabla ai_dilemmas_cache")
             
     except Exception as e:
         print(f"⚠️ Error durante la migración: {e}")
         # No lanzar excepción, solo registrar el error
+
+# ==================== SISTEMA DE IMÁGENES ====================
+# URLs públicas de imágenes de Unsplash organizadas por categoría
+# Estas son URLs directas que no requieren API key
+
+# Mapeo de palabras clave a imágenes específicas para selección inteligente
+KEYWORD_IMAGE_MAP = {
+    # Medicina - Dilemas específicos
+    'medicina': {
+        'hospital': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800',
+        'medicamento': 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',
+        'paciente': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800',
+        'doctor': 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800',
+        'tratamiento': 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800',
+        'urgencia': 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
+        'recursos': 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',
+        'salud': 'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800',
+    },
+    'tecnología': {
+        'ia': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800',
+        'algoritmo': 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800',
+        'datos': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+        'privacidad': 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800',
+        'redes': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',
+        'aplicación': 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800',
+    },
+    'medio ambiente': {
+        'naturaleza': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
+        'contaminación': 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800',
+        'árboles': 'https://images.unsplash.com/photo-1511497584788-876760111969?w=800',
+        'animales': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800',
+        'energía': 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800',
+        'ecosistema': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800',
+    },
+    'negocios': {
+        'empresa': 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',
+        'trabajo': 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800',
+        'dinero': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800',
+        'oficina': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',
+    },
+    'sociedad': {
+        'gente': 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800',
+        'comunidad': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
+        'familia': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800',
+        'justicia': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800',
+    },
+    'clásico': {
+        'tren': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800',
+        'vías': 'https://images.unsplash.com/photo-1517817748493-49b5541a82ad?w=800',
+        'decisión': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800',
+        'elección': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
+    },
+}
+
+IMAGE_BANK = {
+    'medicina': [
+        'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800',  # Hospital
+        'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800',  # Medicamentos
+        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800',  # Paciente
+        'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800',  # Doctor
+        'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800',  # Tratamiento
+        'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',  # Urgencia
+        'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800',  # Recursos médicos
+        'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800',  # Salud
+    ],
+    'tecnología': [
+        'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800',  # IA/Cerebro
+        'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800',  # Algoritmos
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',  # Datos
+        'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800',  # Privacidad
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800',  # Redes
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800',  # App desarrollo
+    ],
+    'medio ambiente': [
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',  # Naturaleza
+        'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800',  # Contaminación
+        'https://images.unsplash.com/photo-1511497584788-876760111969?w=800',  # Árboles
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800',  # Ecosistema
+        'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800',  # Energía
+        'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',  # Planeta
+    ],
+    'negocios': [
+        'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',  # Empresa
+        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800',  # Trabajo
+        'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800',  # Dinero
+        'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',  # Oficina
+        'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',  # Reunión
+    ],
+    'sociedad': [
+        'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800',  # Gente
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',  # Comunidad
+        'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800',  # Familia
+        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800',  # Justicia
+        'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800',  # Sociedad
+    ],
+    'clásico': [
+        'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800',  # Tren
+        'https://images.unsplash.com/photo-1517817748493-49b5541a82ad?w=800',  # Vías
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800',  # Decisión
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',  # Elección
+    ],
+    'educación': [
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',  # Educación
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',  # Aprendizaje
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800',  # Estudio
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800',  # Escuela
+    ],
+    'política': [
+        'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800',  # Política
+        'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800',  # Gobierno
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',  # Elecciones
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',  # Democracia
+    ],
+    'general': [
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800',  # General
+        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800',  # Tecnología
+        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',  # Mundo
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',  # Pensamiento
+    ]
+}
+
+# Imágenes para marcos éticos - Representativas conceptualmente de cada filosofía
+ETHICAL_FRAMEWORK_IMAGES = {
+    # Utilitarismo: Maximizar bienestar/beneficios para la mayoría (balance, números, beneficios, gráficos)
+    'utilitarianismo': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600',  # Gráficos/estadísticas (maximizar resultados)
+    
+    # Deontología: Deberes y principios morales absolutos (justicia, ley, principios)
+    'deontologia': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600',  # Justicia/balanza de la justicia
+    
+    # Autonomía: Respeto por la libertad y decisiones individuales (libertad, elección, independencia)
+    'autonomia': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',  # Persona independiente/pensando
+    
+    # Paternalismo: Proteger a otros incluso contra su voluntad (cuidado, protección, ayuda)
+    'paternalismo': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600',  # Protección/cuidado familiar
+    
+    # Ecocentrismo: Valor intrínseco del medio ambiente (naturaleza, ecosistema, vida silvestre)
+    'ecocentrismo': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600',  # Naturaleza/medio ambiente
+    
+    # Antropocentrismo: Los humanos son el centro de valor (personas, sociedad, humanidad)
+    'antropocentrismo': 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=600'  # Personas/comunidad humana
+}
+
+def get_dilemma_image(scenario, category='general'):
+    """Obtiene una imagen para el dilema basada en categoría y palabras clave del escenario"""
+    try:
+        # Normalizar categoría y escenario
+        category = category.lower() if category else 'general'
+        scenario_lower = scenario.lower() if scenario else ''
+        
+        # Intentar encontrar imagen por palabras clave específicas
+        if category in KEYWORD_IMAGE_MAP:
+            keyword_map = KEYWORD_IMAGE_MAP[category]
+            
+            # Buscar palabras clave en el escenario
+            for keyword, image_url in keyword_map.items():
+                # Buscar variaciones de la palabra clave
+                keyword_variations = [
+                    keyword,
+                    keyword + 's',  # plural
+                    keyword + 'es',  # plural español
+                ]
+                
+                # También buscar en español común
+                if keyword == 'hospital':
+                    keyword_variations.extend(['hospital', 'hospitales'])
+                elif keyword == 'medicamento':
+                    keyword_variations.extend(['medicamento', 'medicamentos', 'medicina', 'fármaco'])
+                elif keyword == 'paciente':
+                    keyword_variations.extend(['paciente', 'pacientes'])
+                elif keyword == 'doctor':
+                    keyword_variations.extend(['doctor', 'médico', 'médica', 'doctores'])
+                elif keyword == 'tratamiento':
+                    keyword_variations.extend(['tratamiento', 'tratamientos', 'terapia'])
+                elif keyword == 'recursos':
+                    keyword_variations.extend(['recurso', 'recursos', 'limitado', 'limitados', 'asignar', 'asignación', 'distribuir'])
+                elif keyword == 'medicamento':
+                    keyword_variations.extend(['medicamento', 'medicamentos', 'fármaco', 'fármacos', 'medicina experimental', 'tratamiento experimental'])
+                elif keyword == 'ia':
+                    keyword_variations.extend(['ia', 'inteligencia artificial', 'artificial', 'algoritmo'])
+                elif keyword == 'datos':
+                    keyword_variations.extend(['dato', 'datos', 'información', 'privacidad'])
+                elif keyword == 'tren':
+                    keyword_variations.extend(['tren', 'trenes', 'vías', 'vía'])
+                elif keyword == 'empresa':
+                    keyword_variations.extend(['empresa', 'empresas', 'compañía', 'negocio'])
+                
+                for variation in keyword_variations:
+                    if variation in scenario_lower:
+                        return image_url
+        
+        # Si no se encontró por palabras clave, usar banco de imágenes de la categoría
+        if category in IMAGE_BANK:
+            images = IMAGE_BANK[category]
+        else:
+            images = IMAGE_BANK['general']
+        
+        # Seleccionar imagen determinística basada en hash del escenario
+        # Esto asegura que el mismo dilema siempre tenga la misma imagen
+        scenario_hash = hash(scenario) % len(images)
+        return images[scenario_hash]
+        
+    except Exception as e:
+        print(f"Error obteniendo imagen del dilema: {e}")
+        # Fallback a imagen general
+        return IMAGE_BANK['general'][0]
+
+def get_ethical_framework_image(ethical_framework):
+    """Obtiene una imagen para el marco ético del análisis"""
+    try:
+        framework = ethical_framework.lower() if ethical_framework else 'general'
+        return ETHICAL_FRAMEWORK_IMAGES.get(framework, IMAGE_BANK['general'][0])
+    except Exception as e:
+        print(f"Error obteniendo imagen del marco ético: {e}")
+        return IMAGE_BANK['general'][0]
+
+def cache_dilemma_image(scenario, image_url):
+    """Guarda la URL de imagen en el cache del dilema"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE ai_dilemmas_cache SET image_url = ? WHERE dilemma_text = ?',
+            (image_url, scenario)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error cacheando imagen: {e}")
+
+def get_cached_dilemma_image(scenario):
+    """Obtiene la imagen en cache para un dilema"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT image_url FROM ai_dilemmas_cache WHERE dilemma_text = ?',
+            (scenario,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        return result[0] if result and result[0] else None
+    except Exception as e:
+        print(f"Error obteniendo imagen cacheada: {e}")
+        return None
+
+# ==================== FIN SISTEMA DE IMÁGENES ====================
+
+# ==================== SISTEMA DE LOGROS ====================
+
+def init_achievements(cursor):
+    """Inicializa los logros predefinidos en la base de datos"""
+    achievements = [
+        # Logros por cantidad
+        ('first_dilemma', 'Primer Paso', 'Completa tu primer dilema ético', '🎯', 'quantity', '1'),
+        ('ten_dilemmas', 'Decidido', 'Completa 10 dilemas éticos', '🔟', 'quantity', '10'),
+        ('twenty_five_dilemmas', 'Pensador', 'Completa 25 dilemas éticos', '📚', 'quantity', '25'),
+        ('fifty_dilemmas', 'Filósofo', 'Completa 50 dilemas éticos', '🧠', 'quantity', '50'),
+        ('hundred_dilemmas', 'Maestro Ético', 'Completa 100 dilemas éticos', '👑', 'quantity', '100'),
+        
+        # Logros por diversidad - Categorías
+        ('explorer', 'Explorador', 'Responde dilemas de todas las categorías', '🗺️', 'diversity_categories', None),
+        
+        # Logros por diversidad - Marcos éticos
+        ('philosopher', 'Filósofo Completo', 'Usa todos los marcos éticos diferentes', '🎓', 'diversity_frameworks', None),
+        
+        # Logros por consistencia - Marcos éticos
+        ('utilitarian', 'Utilitarista', 'Elige utilitarismo 5 veces', '⚖️', 'consistency', 'utilitarianismo:5'),
+        ('deontologist', 'Deontólogo', 'Elige deontología 5 veces', '📜', 'consistency', 'deontologia:5'),
+        ('autonomous', 'Defensor de la Autonomía', 'Elige autonomía 5 veces', '🕊️', 'consistency', 'autonomia:5'),
+        ('paternalist', 'Paternalista', 'Elige paternalismo 5 veces', '🛡️', 'consistency', 'paternalismo:5'),
+        ('ecocentrist', 'Ecocentrista', 'Elige ecocentrismo 5 veces', '🌱', 'consistency', 'ecocentrismo:5'),
+        ('anthropocentrist', 'Antropocentrista', 'Elige antropocentrismo 5 veces', '👥', 'consistency', 'antropocentrismo:5'),
+        
+        # Logros especiales
+        ('thinker', 'Pensador Profundo', 'Completa 10 análisis con IA', '💭', 'special', 'analyses:10'),
+        ('speedster', 'Velocista', 'Completa 10 dilemas en una sola sesión', '⚡', 'special', 'session:10'),
+    ]
+    
+    for code, name, description, icon, achievement_type, condition_value in achievements:
+        cursor.execute('''
+            INSERT OR IGNORE INTO achievements (code, name, description, icon, achievement_type, condition_value)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (code, name, description, icon, achievement_type, condition_value))
+
+def check_and_unlock_achievements(player_name, game_id=None):
+    """Verifica y desbloquea logros para un jugador"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Obtener todas las decisiones del jugador
+    if game_id:
+        cursor.execute('''
+            SELECT d.ethical_framework, d.dilemma_category, d.analysis, g.start_time
+            FROM decisions d
+            JOIN games g ON d.game_id = g.id
+            WHERE g.player_name = ? AND d.game_id = ?
+        ''', (player_name, game_id))
+    else:
+        cursor.execute('''
+            SELECT d.ethical_framework, d.dilemma_category, d.analysis, g.start_time
+            FROM decisions d
+            JOIN games g ON d.game_id = g.id
+            WHERE g.player_name = ?
+        ''', (player_name,))
+    
+    all_decisions = cursor.fetchall()
+    
+    if not all_decisions:
+        conn.close()
+        return []
+    
+    # Obtener logros ya desbloqueados
+    cursor.execute('''
+        SELECT a.code FROM achievements a
+        JOIN player_achievements pa ON a.id = pa.achievement_id
+        WHERE pa.player_name = ?
+    ''', (player_name,))
+    unlocked_codes = {row[0] for row in cursor.fetchall()}
+    
+    # Obtener todos los logros disponibles
+    cursor.execute('SELECT id, code, achievement_type, condition_value FROM achievements')
+    all_achievements = cursor.fetchall()
+    
+    newly_unlocked = []
+    
+    for achievement_id, code, achievement_type, condition_value in all_achievements:
+        if code in unlocked_codes:
+            continue
+        
+        unlocked = False
+        
+        if achievement_type == 'quantity':
+            # Logros por cantidad total
+            total_count = len(all_decisions)
+            required = int(condition_value)
+            if total_count >= required:
+                unlocked = True
+        
+        elif achievement_type == 'diversity_categories':
+            # Explorador: todas las categorías
+            categories = {d[1] for d in all_decisions if d[1]}
+            required_categories = {'clásico', 'medicina', 'tecnología', 'medio ambiente', 'negocios', 'sociedad'}
+            if required_categories.issubset(categories):
+                unlocked = True
+        
+        elif achievement_type == 'diversity_frameworks':
+            # Filósofo: todos los marcos éticos
+            frameworks = {d[0] for d in all_decisions if d[0]}
+            required_frameworks = {'utilitarianismo', 'deontologia', 'autonomia', 'paternalismo', 'ecocentrismo', 'antropocentrismo'}
+            if required_frameworks.issubset(frameworks):
+                unlocked = True
+        
+        elif achievement_type == 'consistency':
+            # Logros por consistencia: usar el mismo marco X veces
+            framework, count = condition_value.split(':')
+            framework_count = sum(1 for d in all_decisions if d[0] == framework)
+            if framework_count >= int(count):
+                unlocked = True
+        
+        elif achievement_type == 'special':
+            if condition_value.startswith('analyses:'):
+                # Pensador: análisis completados
+                required = int(condition_value.split(':')[1])
+                analyses_count = sum(1 for d in all_decisions if d[2] and d[2].strip())
+                if analyses_count >= required:
+                    unlocked = True
+            elif condition_value.startswith('session:'):
+                # Velocista: dilemas en una sesión
+                if game_id:
+                    required = int(condition_value.split(':')[1])
+                    cursor.execute('SELECT COUNT(*) FROM decisions WHERE game_id = ?', (game_id,))
+                    session_count = cursor.fetchone()[0]
+                    if session_count >= required:
+                        unlocked = True
+        
+        if unlocked:
+            # Desbloquear logro
+            try:
+                cursor.execute('''
+                    INSERT INTO player_achievements (player_name, achievement_id)
+                    VALUES (?, ?)
+                ''', (player_name, achievement_id))
+                
+                # Obtener información del logro
+                cursor.execute('SELECT name, description, icon FROM achievements WHERE id = ?', (achievement_id,))
+                achievement_info = cursor.fetchone()
+                newly_unlocked.append({
+                    'code': code,
+                    'name': achievement_info[0],
+                    'description': achievement_info[1],
+                    'icon': achievement_info[2]
+                })
+            except sqlite3.IntegrityError:
+                # Ya estaba desbloqueado (race condition)
+                pass
+    
+    conn.commit()
+    conn.close()
+    return newly_unlocked
+
+def get_player_achievements(player_name):
+    """Obtiene todos los logros de un jugador"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT a.code, a.name, a.description, a.icon, pa.unlocked_at
+        FROM achievements a
+        JOIN player_achievements pa ON a.id = pa.achievement_id
+        WHERE pa.player_name = ?
+        ORDER BY pa.unlocked_at DESC
+    ''', (player_name,))
+    
+    unlocked = [{
+        'code': row[0],
+        'name': row[1],
+        'description': row[2],
+        'icon': row[3],
+        'unlocked_at': row[4]
+    } for row in cursor.fetchall()]
+    
+    # Obtener todos los logros disponibles para mostrar progreso
+    cursor.execute('SELECT code, name, description, icon FROM achievements ORDER BY id')
+    all_achievements = cursor.fetchall()
+    
+    unlocked_codes = {a['code'] for a in unlocked}
+    
+    all_achievements_list = []
+    for code, name, description, icon in all_achievements:
+        all_achievements_list.append({
+            'code': code,
+            'name': name,
+            'description': description,
+            'icon': icon,
+            'unlocked': code in unlocked_codes
+        })
+    
+    conn.close()
+    return {
+        'unlocked': unlocked,
+        'all': all_achievements_list,
+        'total': len(all_achievements_list),
+        'unlocked_count': len(unlocked)
+    }
+
+def calculate_retroactive_achievements():
+    """Calcula logros retroactivamente para todos los jugadores existentes"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Obtener todos los nombres de jugadores únicos
+    cursor.execute('SELECT DISTINCT player_name FROM games')
+    players = [row[0] for row in cursor.fetchall()]
+    
+    total_unlocked = 0
+    for player_name in players:
+        newly_unlocked = check_and_unlock_achievements(player_name)
+        total_unlocked += len(newly_unlocked)
+        if newly_unlocked:
+            print(f"✅ {player_name}: {len(newly_unlocked)} logros desbloqueados retroactivamente")
+    
+    conn.close()
+    return total_unlocked
+
+# ==================== FIN SISTEMA DE LOGROS ====================
 
 def generate_dilemma_with_gemini():
     """Generate a new ethical dilemma using Google Gemini"""
@@ -298,7 +799,8 @@ def generate_dilemma_with_gemini():
         return None
     
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        # Usar gemini-2.5-flash (más reciente y estable)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         categories = ['medicina', 'tecnología', 'medio ambiente', 'negocios', 'sociedad', 'educación', 'política']
         selected_category = random.choice(categories)
@@ -360,73 +862,30 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional, sin markdown, sin ex
         print(f"Error generating dilemma with Gemini: {e}")
         return None
 
-def generate_dilemma_with_together():
-    """Generate a new ethical dilemma using Together AI (fallback)"""
-    if not TOGETHER_API_KEY:
-        return None
-    
-    prompt = """
-    Generate a unique ethical dilemma scenario with exactly 2 options. 
-    Each option should represent a different ethical framework (like utilitarianism vs deontology, autonomy vs paternalism, etc.)
-    
-    Return JSON format:
-    {
-        "category": "category_name",
-        "scenario": "detailed ethical scenario",
-        "options": [
-            {"text": "first option text", "ethical_value": "utilitarianism"},
-            {"text": "second option text", "ethical_value": "deontology"}
-        ]
-    }
-    
-    Make it realistic, thought-provoking, and different from common dilemmas.
-    """
-    
-    try:
-        response = requests.post(
-            TOGETHER_API_URL,
-            headers={
-                'Authorization': f'Bearer {TOGETHER_API_KEY}',
-                'Content-Type': 'application/json'
-            },
-            json={
-                'model': 'meta-llama/Llama-3.2-3B-Instruct-Turbo',
-                'messages': [{'role': 'user', 'content': prompt}],
-                'temperature': 0.8,
-                'max_tokens': 500
-            }
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content']
-            
-            try:
-                dilemma_data = json.loads(content)
-                if 'category' not in dilemma_data:
-                    dilemma_data['category'] = 'general'
-                return dilemma_data
-            except json.JSONDecodeError:
-                log_prompt(prompt, content)
-                return None
-        else:
-            return None
-            
-    except Exception as e:
-        print(f"Error generating dilemma with Together AI: {e}")
-        return None
-
 def cache_dilemma(dilemma_data):
     """Cache AI-generated dilemmas to avoid duplicates"""
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
+        
+        # Obtener imagen para el dilema
+        category = dilemma_data.get('category', 'general')
+        scenario = dilemma_data['scenario']
+        image_url = get_dilemma_image(scenario, category)
+        
         cursor.execute(
-            '''INSERT OR IGNORE INTO ai_dilemmas_cache (dilemma_text, scenario, options, category) 
-               VALUES (?, ?, ?, ?)''',
-            (dilemma_data['scenario'], dilemma_data['scenario'], 
-             json.dumps(dilemma_data['options']), dilemma_data.get('category', 'general'))
+            '''INSERT OR IGNORE INTO ai_dilemmas_cache (dilemma_text, scenario, options, category, image_url) 
+               VALUES (?, ?, ?, ?, ?)''',
+            (scenario, scenario, 
+             json.dumps(dilemma_data['options']), category, image_url)
         )
+        
+        # Si el registro ya existía, actualizar la imagen
+        cursor.execute(
+            'UPDATE ai_dilemmas_cache SET image_url = ? WHERE dilemma_text = ? AND image_url IS NULL',
+            (image_url, scenario)
+        )
+        
         conn.commit()
         conn.close()
     except Exception as e:
@@ -447,7 +906,8 @@ def analyze_decision_with_ai(dilemma, chosen_option, ethical_framework):
             print("⚠️ Dilema sin escenario para análisis")
             return None
         
-        model = genai.GenerativeModel('gemini-pro')
+        # Usar gemini-2.5-flash (más reciente y estable)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         scenario_text = dilemma.get('scenario', '')
         if not scenario_text:
@@ -518,26 +978,34 @@ def start_game():
 
 @app.route('/api/get_dilemma', methods=['GET'])
 def get_dilemma():
-    """Get a random ethical dilemma"""
-    # Try Gemini first, then Together AI, then predefined
+    """Get a random ethical dilemma with image"""
+    # Try Gemini first, then predefined
     ai_dilemma = None
     
-    # Intentar con Gemini (prioritario)
+    # Intentar con Gemini
     if GOOGLE_API_KEY:
         ai_dilemma = generate_dilemma_with_gemini()
-    
-    # Fallback a Together AI si Gemini falla
-    if not ai_dilemma and TOGETHER_API_KEY:
-        ai_dilemma = generate_dilemma_with_together()
     
     if ai_dilemma:
         dilemma = ai_dilemma
         dilemma['id'] = random.randint(1000, 9999)  # Assign random ID for AI dilemmas
         if 'category' not in dilemma:
             dilemma['category'] = 'general'
+        
+        # Obtener imagen del dilema (verificar cache primero)
+        scenario = dilemma.get('scenario', '')
+        cached_image = get_cached_dilemma_image(scenario)
+        if cached_image:
+            dilemma['image_url'] = cached_image
+        else:
+            dilemma['image_url'] = get_dilemma_image(scenario, dilemma.get('category', 'general'))
     else:
         # Fallback to predefined dilemmas
         dilemma = random.choice(PREDEFINED_DILEMMAS).copy()
+        # Obtener imagen para dilema predefinido
+        scenario = dilemma.get('scenario', '')
+        category = dilemma.get('category', 'general')
+        dilemma['image_url'] = get_dilemma_image(scenario, category)
     
     return jsonify(dilemma)
 
@@ -607,12 +1075,30 @@ def make_decision():
                 (game_id,)
             )
         
+        # Obtener nombre del jugador para verificar logros
+        cursor.execute('SELECT player_name FROM games WHERE id = ?', (game_id,))
+        player_result = cursor.fetchone()
+        player_name = player_result[0] if player_result else None
+        
         conn.commit()
         conn.close()
         
+        # Verificar y desbloquear logros (no bloquea si falla)
+        newly_unlocked = []
+        if player_name:
+            try:
+                newly_unlocked = check_and_unlock_achievements(player_name, game_id)
+            except Exception as e:
+                print(f"⚠️ Error verificando logros: {e}")
+        
+        # Obtener imagen para el análisis ético
+        ethical_image_url = get_ethical_framework_image(ethical_framework)
+        
         return jsonify({
             'status': 'success',
-            'analysis': analysis
+            'analysis': analysis,
+            'ethical_framework_image': ethical_image_url,
+            'newly_unlocked_achievements': newly_unlocked
         })
         
     except sqlite3.Error as e:
@@ -663,14 +1149,22 @@ def get_stats(game_id):
         (game_id,)
     )
     game_info = cursor.fetchone()
+    player_name = game_info[0] if game_info else None
     
     conn.close()
+    
+    # Verificar logros una vez más al ver estadísticas (por si acaso)
+    if player_name:
+        try:
+            check_and_unlock_achievements(player_name, game_id)
+        except Exception as e:
+            print(f"⚠️ Error verificando logros en stats: {e}")
     
     return jsonify({
         'framework_stats': framework_stats,
         'category_stats': category_stats,
         'total_decisions': total_decisions,
-        'player_name': game_info[0] if game_info else 'Unknown',
+        'player_name': player_name if player_name else 'Unknown',
         'dilemmas_answered': game_info[1] if game_info else 0
     })
 
@@ -691,12 +1185,33 @@ def end_game():
     
     return jsonify({'status': 'success'})
 
+@app.route('/api/get_achievements/<player_name>', methods=['GET'])
+def get_achievements(player_name):
+    """Get all achievements for a player"""
+    try:
+        achievements_data = get_player_achievements(player_name)
+        return jsonify(achievements_data)
+    except Exception as e:
+        print(f"❌ Error obteniendo logros: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 if __name__ == '__main__':
     init_db()
     print("🧠 Ethical Dilemma Simulator starting...")
     print(f"📊 Database initialized: {DATABASE}")
     print(f"🤖 Google Gemini: {'✅ Enabled' if GOOGLE_API_KEY else '❌ Disabled'}")
-    print(f"🤖 Together AI: {'✅ Enabled (fallback)' if TOGETHER_API_KEY else '❌ Disabled'}")
     print(f"📚 Predefined dilemmas: {len(PREDEFINED_DILEMMAS)}")
+    
+    # Calcular logros retroactivamente para jugadores existentes
+    print("🏆 Calculando logros retroactivos...")
+    try:
+        total_unlocked = calculate_retroactive_achievements()
+        if total_unlocked > 0:
+            print(f"✅ {total_unlocked} logros desbloqueados retroactivamente")
+        else:
+            print("✅ No hay logros nuevos para desbloquear")
+    except Exception as e:
+        print(f"⚠️ Error calculando logros retroactivos: {e}")
+    
     print("🚀 Server running on http://localhost:5000")
     app.run(debug=True)
