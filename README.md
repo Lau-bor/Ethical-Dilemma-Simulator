@@ -134,8 +134,3 @@ pytest -q
 - (Opcional) Añadir `Procfile` o script para producción.
 - Revisar el final de `app.py` si prefieres que el script arranque el servidor directamente con `app.run()`.
 
-Si quieres, puedo:
-
-- ➕ Añadir un ejemplo `.env.example` con formato.
-- ⚙️ Ajustar `app.py` para que ejecutar `python app.py` inicie el servidor directamente.
-- 🧰 Crear scripts de inicio (`Makefile`/`tasks.json`) para Windows/PowerShell.
