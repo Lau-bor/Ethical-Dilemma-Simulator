@@ -1,0 +1,63 @@
+Prompts del Inicio del proyecto:
+
+-Quiero que generes una página en base a esta idea: "Ethical Dilemma Simulator"Concepto: Juego de decisiones morales donde la IA genera escenarios éticos únicos y evalúa tus respuestas
+-Una ia me hizo esta app hasta este punto, podrías realizar algunas mejoras? Tiene dilemas muy limitados y no genera nuevos, este es el concepto, quiero que realices mejoras en base a la información
+
+
+=======================================================
+
+Prompts de Mejoras a la app:
+
+-Estaba pensando en agregar imágenes hechas con IA pero como son de paga, habría alguna manera que tu generes o encuentres imágenes que coincidan con el dilema y además con el pensamiento ético que sale en la respuesta al elegir una opción?
+Preguntame antes de hacer algo
+
+-Propuso utilizar imágenes predefinidas sacadas de la página unsplash (tomó en cuenta la categoria de la pregunta y el pensamiento ético según la opción elegida por el usuario)
+
+
+-Necesito que agregues un boton donde creas conveniente respetando el diseño con la funcion de activar y desactivar el modo oscuro
+
+
+-Quiero mejorar el diseño del resultado del dilema.
+Actualmente, cuando el usuario elige una opción, el análisis (la parte que dice ‘Decisión registrada’ con la imagen y el texto) aparece abajo en la misma página.
+Lo que quiero es que eso no se muestre ahí, sino que se abra en una ventanita modal (un popup centrado en la pantalla) que contenga:
+
+el título ‘Decisión registrada’,
+
+la imagen de la balanza,
+
+el texto que genera el análisis,
+
+y dos botones: uno que diga ‘Cerrar’ y otro ‘Siguiente dilema’.
+
+La ventana debe tener bordes redondeados, sombra suave, fondo oscuro translúcido detrás y una animación suave al aparecer.
+
+Hacelo usando HTML, CSS y JavaScript directamente en mi index.html (sin cambiar el backend Flask).
+Cuando el backend devuelve la respuesta, en lugar de agregarla al final del cuerpo, que el JavaScript llene el contenido del modal y lo muestre en pantalla.
+
+-Necesito saber si es posible generar un sistema de logros (como los maneja "Steam" o "Playstation") que no infliga en romper algo en el código
+
+Si es posible preguntame antes de hacer cualquier cosa y comentame lo que hiciste
+
+Respuestas a las dudas de la IA a los logros
+
+Sobre los logros añade lo que prefieras o sea mejor según lo que pienses (cantidad, diversidad, consistencia u especiales evalualo)
+
+Si que se muestren al desbloquearse directamente
+
+Los logros sean por player_name
+
+Si piensas que sea retroactivo será mejor para la app hazlo
+
+====================================================
+
+Prompt para testeo de uso correcto del modelo de IA:
+
+-Necesito una archivo de prueba para saber si la conexión con el modelo de IA de Gemini a través de mi api key esta funcionando. Yo la tengo en una archivo .env
+
+
+- Me gustaria que el modal sea horizontal para evitar el scroll
+
+- Quiero que la imagen de modal sea mas grande y que la respuesta de gemini tenga un tamaño de fuente adecuado para evitar que no sea vean los botones
+
+
+
