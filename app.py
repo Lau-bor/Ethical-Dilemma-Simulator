@@ -254,8 +254,37 @@ def init_db():
         )
     ''')
     
+    # Tabla para logros disponibles
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            achievement_type TEXT NOT NULL,
+            condition_value TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Tabla para logros desbloqueados por jugadores
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS player_achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_name TEXT NOT NULL,
+            achievement_id INTEGER NOT NULL,
+            unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (achievement_id) REFERENCES achievements (id),
+            UNIQUE(player_name, achievement_id)
+        )
+    ''')
+    
     # Migración: Agregar columnas faltantes si no existen
     migrate_db(cursor)
+    
+    # Inicializar logros predefinidos
+    init_achievements(cursor)
     
     conn.commit()
     conn.close()
@@ -545,6 +574,225 @@ def get_cached_dilemma_image(scenario):
 
 # ==================== FIN SISTEMA DE IMÁGENES ====================
 
+# ==================== SISTEMA DE LOGROS ====================
+
+def init_achievements(cursor):
+    """Inicializa los logros predefinidos en la base de datos"""
+    achievements = [
+        # Logros por cantidad
+        ('first_dilemma', 'Primer Paso', 'Completa tu primer dilema ético', '🎯', 'quantity', '1'),
+        ('ten_dilemmas', 'Decidido', 'Completa 10 dilemas éticos', '🔟', 'quantity', '10'),
+        ('twenty_five_dilemmas', 'Pensador', 'Completa 25 dilemas éticos', '📚', 'quantity', '25'),
+        ('fifty_dilemmas', 'Filósofo', 'Completa 50 dilemas éticos', '🧠', 'quantity', '50'),
+        ('hundred_dilemmas', 'Maestro Ético', 'Completa 100 dilemas éticos', '👑', 'quantity', '100'),
+        
+        # Logros por diversidad - Categorías
+        ('explorer', 'Explorador', 'Responde dilemas de todas las categorías', '🗺️', 'diversity_categories', None),
+        
+        # Logros por diversidad - Marcos éticos
+        ('philosopher', 'Filósofo Completo', 'Usa todos los marcos éticos diferentes', '🎓', 'diversity_frameworks', None),
+        
+        # Logros por consistencia - Marcos éticos
+        ('utilitarian', 'Utilitarista', 'Elige utilitarismo 5 veces', '⚖️', 'consistency', 'utilitarianismo:5'),
+        ('deontologist', 'Deontólogo', 'Elige deontología 5 veces', '📜', 'consistency', 'deontologia:5'),
+        ('autonomous', 'Defensor de la Autonomía', 'Elige autonomía 5 veces', '🕊️', 'consistency', 'autonomia:5'),
+        ('paternalist', 'Paternalista', 'Elige paternalismo 5 veces', '🛡️', 'consistency', 'paternalismo:5'),
+        ('ecocentrist', 'Ecocentrista', 'Elige ecocentrismo 5 veces', '🌱', 'consistency', 'ecocentrismo:5'),
+        ('anthropocentrist', 'Antropocentrista', 'Elige antropocentrismo 5 veces', '👥', 'consistency', 'antropocentrismo:5'),
+        
+        # Logros especiales
+        ('thinker', 'Pensador Profundo', 'Completa 10 análisis con IA', '💭', 'special', 'analyses:10'),
+        ('speedster', 'Velocista', 'Completa 10 dilemas en una sola sesión', '⚡', 'special', 'session:10'),
+    ]
+    
+    for code, name, description, icon, achievement_type, condition_value in achievements:
+        cursor.execute('''
+            INSERT OR IGNORE INTO achievements (code, name, description, icon, achievement_type, condition_value)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (code, name, description, icon, achievement_type, condition_value))
+
+def check_and_unlock_achievements(player_name, game_id=None):
+    """Verifica y desbloquea logros para un jugador"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Obtener todas las decisiones del jugador
+    if game_id:
+        cursor.execute('''
+            SELECT d.ethical_framework, d.dilemma_category, d.analysis, g.start_time
+            FROM decisions d
+            JOIN games g ON d.game_id = g.id
+            WHERE g.player_name = ? AND d.game_id = ?
+        ''', (player_name, game_id))
+    else:
+        cursor.execute('''
+            SELECT d.ethical_framework, d.dilemma_category, d.analysis, g.start_time
+            FROM decisions d
+            JOIN games g ON d.game_id = g.id
+            WHERE g.player_name = ?
+        ''', (player_name,))
+    
+    all_decisions = cursor.fetchall()
+    
+    if not all_decisions:
+        conn.close()
+        return []
+    
+    # Obtener logros ya desbloqueados
+    cursor.execute('''
+        SELECT a.code FROM achievements a
+        JOIN player_achievements pa ON a.id = pa.achievement_id
+        WHERE pa.player_name = ?
+    ''', (player_name,))
+    unlocked_codes = {row[0] for row in cursor.fetchall()}
+    
+    # Obtener todos los logros disponibles
+    cursor.execute('SELECT id, code, achievement_type, condition_value FROM achievements')
+    all_achievements = cursor.fetchall()
+    
+    newly_unlocked = []
+    
+    for achievement_id, code, achievement_type, condition_value in all_achievements:
+        if code in unlocked_codes:
+            continue
+        
+        unlocked = False
+        
+        if achievement_type == 'quantity':
+            # Logros por cantidad total
+            total_count = len(all_decisions)
+            required = int(condition_value)
+            if total_count >= required:
+                unlocked = True
+        
+        elif achievement_type == 'diversity_categories':
+            # Explorador: todas las categorías
+            categories = {d[1] for d in all_decisions if d[1]}
+            required_categories = {'clásico', 'medicina', 'tecnología', 'medio ambiente', 'negocios', 'sociedad'}
+            if required_categories.issubset(categories):
+                unlocked = True
+        
+        elif achievement_type == 'diversity_frameworks':
+            # Filósofo: todos los marcos éticos
+            frameworks = {d[0] for d in all_decisions if d[0]}
+            required_frameworks = {'utilitarianismo', 'deontologia', 'autonomia', 'paternalismo', 'ecocentrismo', 'antropocentrismo'}
+            if required_frameworks.issubset(frameworks):
+                unlocked = True
+        
+        elif achievement_type == 'consistency':
+            # Logros por consistencia: usar el mismo marco X veces
+            framework, count = condition_value.split(':')
+            framework_count = sum(1 for d in all_decisions if d[0] == framework)
+            if framework_count >= int(count):
+                unlocked = True
+        
+        elif achievement_type == 'special':
+            if condition_value.startswith('analyses:'):
+                # Pensador: análisis completados
+                required = int(condition_value.split(':')[1])
+                analyses_count = sum(1 for d in all_decisions if d[2] and d[2].strip())
+                if analyses_count >= required:
+                    unlocked = True
+            elif condition_value.startswith('session:'):
+                # Velocista: dilemas en una sesión
+                if game_id:
+                    required = int(condition_value.split(':')[1])
+                    cursor.execute('SELECT COUNT(*) FROM decisions WHERE game_id = ?', (game_id,))
+                    session_count = cursor.fetchone()[0]
+                    if session_count >= required:
+                        unlocked = True
+        
+        if unlocked:
+            # Desbloquear logro
+            try:
+                cursor.execute('''
+                    INSERT INTO player_achievements (player_name, achievement_id)
+                    VALUES (?, ?)
+                ''', (player_name, achievement_id))
+                
+                # Obtener información del logro
+                cursor.execute('SELECT name, description, icon FROM achievements WHERE id = ?', (achievement_id,))
+                achievement_info = cursor.fetchone()
+                newly_unlocked.append({
+                    'code': code,
+                    'name': achievement_info[0],
+                    'description': achievement_info[1],
+                    'icon': achievement_info[2]
+                })
+            except sqlite3.IntegrityError:
+                # Ya estaba desbloqueado (race condition)
+                pass
+    
+    conn.commit()
+    conn.close()
+    return newly_unlocked
+
+def get_player_achievements(player_name):
+    """Obtiene todos los logros de un jugador"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT a.code, a.name, a.description, a.icon, pa.unlocked_at
+        FROM achievements a
+        JOIN player_achievements pa ON a.id = pa.achievement_id
+        WHERE pa.player_name = ?
+        ORDER BY pa.unlocked_at DESC
+    ''', (player_name,))
+    
+    unlocked = [{
+        'code': row[0],
+        'name': row[1],
+        'description': row[2],
+        'icon': row[3],
+        'unlocked_at': row[4]
+    } for row in cursor.fetchall()]
+    
+    # Obtener todos los logros disponibles para mostrar progreso
+    cursor.execute('SELECT code, name, description, icon FROM achievements ORDER BY id')
+    all_achievements = cursor.fetchall()
+    
+    unlocked_codes = {a['code'] for a in unlocked}
+    
+    all_achievements_list = []
+    for code, name, description, icon in all_achievements:
+        all_achievements_list.append({
+            'code': code,
+            'name': name,
+            'description': description,
+            'icon': icon,
+            'unlocked': code in unlocked_codes
+        })
+    
+    conn.close()
+    return {
+        'unlocked': unlocked,
+        'all': all_achievements_list,
+        'total': len(all_achievements_list),
+        'unlocked_count': len(unlocked)
+    }
+
+def calculate_retroactive_achievements():
+    """Calcula logros retroactivamente para todos los jugadores existentes"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Obtener todos los nombres de jugadores únicos
+    cursor.execute('SELECT DISTINCT player_name FROM games')
+    players = [row[0] for row in cursor.fetchall()]
+    
+    total_unlocked = 0
+    for player_name in players:
+        newly_unlocked = check_and_unlock_achievements(player_name)
+        total_unlocked += len(newly_unlocked)
+        if newly_unlocked:
+            print(f"✅ {player_name}: {len(newly_unlocked)} logros desbloqueados retroactivamente")
+    
+    conn.close()
+    return total_unlocked
+
+# ==================== FIN SISTEMA DE LOGROS ====================
+
 def generate_dilemma_with_gemini():
     """Generate a new ethical dilemma using Google Gemini"""
     if not GOOGLE_API_KEY:
@@ -827,8 +1075,21 @@ def make_decision():
                 (game_id,)
             )
         
+        # Obtener nombre del jugador para verificar logros
+        cursor.execute('SELECT player_name FROM games WHERE id = ?', (game_id,))
+        player_result = cursor.fetchone()
+        player_name = player_result[0] if player_result else None
+        
         conn.commit()
         conn.close()
+        
+        # Verificar y desbloquear logros (no bloquea si falla)
+        newly_unlocked = []
+        if player_name:
+            try:
+                newly_unlocked = check_and_unlock_achievements(player_name, game_id)
+            except Exception as e:
+                print(f"⚠️ Error verificando logros: {e}")
         
         # Obtener imagen para el análisis ético
         ethical_image_url = get_ethical_framework_image(ethical_framework)
@@ -836,7 +1097,8 @@ def make_decision():
         return jsonify({
             'status': 'success',
             'analysis': analysis,
-            'ethical_framework_image': ethical_image_url
+            'ethical_framework_image': ethical_image_url,
+            'newly_unlocked_achievements': newly_unlocked
         })
         
     except sqlite3.Error as e:
@@ -887,14 +1149,22 @@ def get_stats(game_id):
         (game_id,)
     )
     game_info = cursor.fetchone()
+    player_name = game_info[0] if game_info else None
     
     conn.close()
+    
+    # Verificar logros una vez más al ver estadísticas (por si acaso)
+    if player_name:
+        try:
+            check_and_unlock_achievements(player_name, game_id)
+        except Exception as e:
+            print(f"⚠️ Error verificando logros en stats: {e}")
     
     return jsonify({
         'framework_stats': framework_stats,
         'category_stats': category_stats,
         'total_decisions': total_decisions,
-        'player_name': game_info[0] if game_info else 'Unknown',
+        'player_name': player_name if player_name else 'Unknown',
         'dilemmas_answered': game_info[1] if game_info else 0
     })
 
@@ -915,11 +1185,33 @@ def end_game():
     
     return jsonify({'status': 'success'})
 
+@app.route('/api/get_achievements/<player_name>', methods=['GET'])
+def get_achievements(player_name):
+    """Get all achievements for a player"""
+    try:
+        achievements_data = get_player_achievements(player_name)
+        return jsonify(achievements_data)
+    except Exception as e:
+        print(f"❌ Error obteniendo logros: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 if __name__ == '__main__':
     init_db()
     print("🧠 Ethical Dilemma Simulator starting...")
     print(f"📊 Database initialized: {DATABASE}")
     print(f"🤖 Google Gemini: {'✅ Enabled' if GOOGLE_API_KEY else '❌ Disabled'}")
     print(f"📚 Predefined dilemmas: {len(PREDEFINED_DILEMMAS)}")
+    
+    # Calcular logros retroactivamente para jugadores existentes
+    print("🏆 Calculando logros retroactivos...")
+    try:
+        total_unlocked = calculate_retroactive_achievements()
+        if total_unlocked > 0:
+            print(f"✅ {total_unlocked} logros desbloqueados retroactivamente")
+        else:
+            print("✅ No hay logros nuevos para desbloquear")
+    except Exception as e:
+        print(f"⚠️ Error calculando logros retroactivos: {e}")
+    
     print("🚀 Server running on http://localhost:5000")
     app.run(debug=True)

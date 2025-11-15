@@ -679,6 +679,154 @@
                 font-size: 18px;
             }
         }
+
+        /* Estilos para notificaciones de logros */
+        .achievements-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+        }
+
+        .achievement-notification {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: achievementSlideIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 300px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .achievement-notification.hiding {
+            animation: achievementSlideOut 0.5s ease-out forwards;
+        }
+
+        @keyframes achievementSlideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes achievementSlideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .achievement-icon {
+            font-size: 3em;
+            flex-shrink: 0;
+            animation: achievementPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes achievementPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .achievement-content {
+            flex: 1;
+        }
+
+        .achievement-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .achievement-description {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .achievements-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .achievement-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .achievement-card.unlocked {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .achievement-card.locked {
+            opacity: 0.5;
+            filter: grayscale(100%);
+        }
+
+        .achievement-card-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .achievement-card-name {
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        .achievement-card-description {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .achievements-container {
+                right: 10px;
+                top: 10px;
+                max-width: calc(100% - 20px);
+            }
+
+            .achievement-notification {
+                min-width: auto;
+                max-width: 100%;
+            }
+
+            .achievements-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
@@ -740,6 +888,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Contenedor para notificaciones de logros -->
+    <div id="achievements-container" class="achievements-container"></div>
 
     <script>
         let gameId = null;
@@ -919,6 +1070,13 @@
                 
                 const result = await response.json();
                 decisionCount++;
+                
+                // Mostrar notificaciones de logros desbloqueados
+                if (result.newly_unlocked_achievements && result.newly_unlocked_achievements.length > 0) {
+                    result.newly_unlocked_achievements.forEach(achievement => {
+                        showAchievementNotification(achievement);
+                    });
+                }
                 
                 // Llenar y mostrar el modal con el resultado
                 showModal(result, option.ethical_value);
@@ -1135,6 +1293,34 @@
             };
             return frameworkNames[framework] || framework;
         }
+
+        function showAchievementNotification(achievement) {
+            const container = document.getElementById('achievements-container');
+            const notification = document.createElement('div');
+            notification.className = 'achievement-notification';
+            notification.innerHTML = `
+                <div class="achievement-icon">${achievement.icon}</div>
+                <div class="achievement-content">
+                    <div class="achievement-title">🏆 ¡Logro Desbloqueado!</div>
+                    <div class="achievement-description">
+                        <strong>${achievement.name}</strong><br>
+                        ${achievement.description}
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                notification.classList.add('hiding');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 500);
+            }, 5000);
+        }
         
         function continuePlaying() {
             const nextBtn = document.getElementById('next-btn');
@@ -1237,6 +1423,36 @@
                         `;
                         statsContainer.appendChild(statItem);
                     });
+                }
+                
+                // Sección de logros
+                try {
+                    const achievementsResponse = await fetch(`/api/get_achievements/${encodeURIComponent(stats.player_name)}`);
+                    const achievementsData = await achievementsResponse.json();
+                    
+                    const achievementsSection = document.createElement('div');
+                    achievementsSection.className = 'achievements-section';
+                    achievementsSection.innerHTML = `
+                        <h3 style="color: #667eea; margin-bottom: 15px;">
+                            🏆 Logros (${achievementsData.unlocked_count}/${achievementsData.total})
+                        </h3>
+                        <div class="achievements-grid" id="achievements-grid"></div>
+                    `;
+                    statsContainer.appendChild(achievementsSection);
+                    
+                    const achievementsGrid = document.getElementById('achievements-grid');
+                    achievementsData.all.forEach(achievement => {
+                        const card = document.createElement('div');
+                        card.className = `achievement-card ${achievement.unlocked ? 'unlocked' : 'locked'}`;
+                        card.innerHTML = `
+                            <div class="achievement-card-icon">${achievement.icon}</div>
+                            <div class="achievement-card-name">${achievement.name}</div>
+                            <div class="achievement-card-description">${achievement.description}</div>
+                        `;
+                        achievementsGrid.appendChild(card);
+                    });
+                } catch (error) {
+                    console.error('Error obteniendo logros:', error);
                 }
                 
                 document.getElementById('game-screen').style.display = 'none';
