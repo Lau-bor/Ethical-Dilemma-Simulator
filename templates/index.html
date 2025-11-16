@@ -1,971 +1,1036 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🧠 Ethical Dilemma Simulator</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        :root {
-            --bg-color: white;
-            --text-color: #333;
-            --text-secondary: #666;
-            --text-tertiary: #555;
-            --border-color: #e0e0e0;
-            --card-bg: #f8f9fa;
-            --option-bg: white;
-            --option-hover: #f0f4ff;
-            --analysis-bg: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
-            --shadow: rgba(0, 0, 0, 0.1);
-        }
+      :root {
+        --bg-color: white;
+        --text-color: #333;
+        --text-secondary: #666;
+        --text-tertiary: #555;
+        --border-color: #e0e0e0;
+        --card-bg: #f8f9fa;
+        --option-bg: white;
+        --option-hover: #f0f4ff;
+        --analysis-bg: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+        --shadow: rgba(0, 0, 0, 0.1);
+      }
 
-        body.dark-mode {
-            --bg-color: #1a1a2e;
-            --text-color: #e0e0e0;
-            --text-secondary: #b0b0b0;
-            --text-tertiary: #c0c0c0;
-            --border-color: #333;
-            --card-bg: #16213e;
-            --option-bg: #0f3460;
-            --option-hover: #16213e;
-            --analysis-bg: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
-            --shadow: rgba(0, 0, 0, 0.5);
-        }
+      body.dark-mode {
+        --bg-color: #1a1a2e;
+        --text-color: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-tertiary: #c0c0c0;
+        --border-color: #333;
+        --card-bg: #16213e;
+        --option-bg: #0f3460;
+        --option-hover: #16213e;
+        --analysis-bg: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+        --shadow: rgba(0, 0, 0, 0.5);
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            transition: background 0.3s ease;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        transition: background 0.3s ease;
+      }
 
-        body.dark-mode {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        }
+      body.dark-mode {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      }
 
-        .container {
-            background: var(--bg-color);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px var(--shadow);
-            max-width: 800px;
-            width: 100%;
-            padding: 40px;
-            animation: fadeIn 0.6s ease-out;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-        }
+      .container {
+        background: var(--bg-color);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px var(--shadow);
+        max-width: 800px;
+        width: 100%;
+        padding: 40px;
+        animation: fadeIn 0.6s ease-out;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+      }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            position: relative;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        .header h1 {
-            color: var(--text-color);
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        position: relative;
+      }
+
+      .header h1 {
+        color: var(--text-color);
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .header p {
+        color: var(--text-secondary);
+        font-size: 1.1em;
+      }
+
+      .dark-mode-toggle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+      }
+
+      .dark-mode-toggle:hover {
+        transform: scale(1.1) rotate(15deg);
+        box-shadow: 0 6px 15px rgba(102, 126, 234, 0.5);
+      }
+
+      .dark-mode-toggle:active {
+        transform: scale(0.95);
+      }
+
+      .game-setup {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      .input-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-color);
+        font-weight: 600;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 16px;
+        transition: border-color 0.3s ease, background-color 0.3s ease,
+          color 0.3s ease;
+        background: var(--option-bg);
+        color: var(--text-color);
+      }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .game-area {
+        display: none;
+      }
+
+      .dilemma-card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border-left: 5px solid #667eea;
+        transition: background 0.3s ease;
+      }
+
+      .dilemma-card h2 {
+        color: var(--text-color);
+        margin-bottom: 15px;
+        font-size: 1.5em;
+      }
+
+      .dilemma-card p {
+        color: var(--text-tertiary);
+        line-height: 1.6;
+        font-size: 1.1em;
+      }
+
+      .dilemma-image {
+        width: 100%;
+        max-width: 100%;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .ethical-image {
+        width: 100%;
+        max-width: 300px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin: 15px auto;
+        display: block;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .options {
+        display: grid;
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+
+      .option-btn {
+        background: var(--option-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        line-height: 1.5;
+        color: var(--text-color);
+      }
+
+      .option-btn:hover {
+        border-color: #667eea;
+        background: var(--option-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px var(--shadow);
+      }
+
+      .option-btn.selected {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
+      .stats {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+        transition: background 0.3s ease;
+      }
+
+      .stats h3 {
+        color: var(--text-color);
+        margin-bottom: 15px;
+      }
+
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
+      }
+
+      .stat-item:last-child {
+        border-bottom: none;
+      }
+
+      .progress-bar {
+        background: var(--border-color);
+        border-radius: 10px;
+        height: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+
+      .progress-fill {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s ease;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .fade-in {
+        animation: fadeIn 0.6s ease-out;
+      }
+
+      .analysis-card {
+        background: var(--analysis-bg);
+        border-left: 5px solid #667eea;
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px 0;
+        animation: slideIn 0.5s ease-out;
+        transition: background 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
         }
-
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1em;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        .dark-mode-toggle {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
-        }
+      .analysis-card h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 1.2em;
+      }
 
-        .dark-mode-toggle:hover {
-            transform: scale(1.1) rotate(15deg);
-            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.5);
-        }
+      .analysis-card p {
+        color: var(--text-tertiary);
+        line-height: 1.6;
+        font-size: 0.95em;
+      }
 
-        .dark-mode-toggle:active {
-            transform: scale(0.95);
-        }
+      .analysis-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
-        .game-setup {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-color);
-            font-weight: 600;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-            background: var(--option-bg);
-            color: var(--text-color);
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .game-area {
-            display: none;
-        }
-
-        .dilemma-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border-left: 5px solid #667eea;
-            transition: background 0.3s ease;
-        }
-
-        .dilemma-card h2 {
-            color: var(--text-color);
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-
-        .dilemma-card p {
-            color: var(--text-tertiary);
-            line-height: 1.6;
-            font-size: 1.1em;
-        }
-
-        .dilemma-image {
-            width: 100%;
-            max-width: 100%;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .ethical-image {
-            width: 100%;
-            max-width: 300px;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin: 15px auto;
-            display: block;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .options {
-            display: grid;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .option-btn {
-            background: var(--option-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 16px;
-            line-height: 1.5;
-            color: var(--text-color);
-        }
-
-        .option-btn:hover {
-            border-color: #667eea;
-            background: var(--option-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px var(--shadow);
-        }
-
-        .option-btn.selected {
-            border-color: #667eea;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .stats {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            transition: background 0.3s ease;
-        }
-
-        .stats h3 {
-            color: var(--text-color);
-            margin-bottom: 15px;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-color);
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        .progress-bar {
-            background: var(--border-color);
-            border-radius: 10px;
-            height: 8px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .progress-fill {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        .analysis-card {
-            background: var(--analysis-bg);
-            border-left: 5px solid #667eea;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            animation: slideIn 0.5s ease-out;
-            transition: background 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .analysis-card h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-
-        .analysis-card p {
-            color: var(--text-tertiary);
-            line-height: 1.6;
-            font-size: 0.95em;
-        }
-
+      @media (min-width: 768px) {
         .analysis-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+          flex-direction: row;
+          align-items: flex-start;
+          gap: 20px;
         }
-
-        @media (min-width: 768px) {
-            .analysis-content {
-                flex-direction: row;
-                align-items: flex-start;
-                gap: 20px;
-            }
-            .ethical-image {
-                flex-shrink: 0;
-                margin: 0;
-            }
+        .ethical-image {
+          flex-shrink: 0;
+          margin: 0;
         }
+      }
 
-        .category-badge {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            margin-bottom: 15px;
-            text-transform: capitalize;
+      .category-badge {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        margin-bottom: 15px;
+        text-transform: capitalize;
+      }
+
+      .decision-counter {
+        text-align: center;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        font-size: 0.9em;
+      }
+
+      .continue-playing {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .continue-playing button {
+        background: #28a745;
+        margin-right: 10px;
+      }
+
+      .continue-playing button:hover {
+        background: #218838;
+      }
+
+      /* Loading Spinner Styles */
+      .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(102, 126, 234, 0.2);
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
+      }
 
-        .decision-counter {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            font-size: 0.9em;
+      .loading-overlay {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .loading-text {
+        margin-top: 20px;
+        color: var(--text-secondary);
+        font-size: 1.1em;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
         }
-
-        .continue-playing {
-            text-align: center;
-            margin-top: 20px;
+        50% {
+          opacity: 0.6;
         }
+      }
 
-        .continue-playing button {
-            background: #28a745;
-            margin-right: 10px;
+      .loading-dots {
+        display: inline-block;
+      }
+
+      .loading-dots::after {
+        content: "...";
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+
+      @keyframes dots {
+        0%,
+        20% {
+          content: ".";
         }
-
-        .continue-playing button:hover {
-            background: #218838;
+        40% {
+          content: "..";
         }
-
-        /* Loading Spinner Styles */
-        .loading-spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(102, 126, 234, 0.2);
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        60%,
+        100% {
+          content: "...";
         }
+      }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+      .analysis-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        padding: 30px;
+        background: var(--analysis-bg);
+        border-left: 5px solid #667eea;
+        border-radius: 15px;
+        margin: 20px 0;
+      }
+
+      .analysis-loading .loading-spinner {
+        width: 30px;
+        height: 30px;
+        border-width: 3px;
+      }
+
+      .analysis-loading-text {
+        color: var(--text-color);
+        font-size: 1em;
+        font-weight: 500;
+      }
+
+      .dilemma-loading {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 40px;
+        margin-bottom: 30px;
+        border-left: 5px solid #667eea;
+      }
+
+      /* Modal Styles */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        animation: fadeInOverlay 0.3s ease-out;
+      }
+
+      .modal-overlay.show {
+        display: flex;
+      }
+
+      @keyframes fadeInOverlay {
+        from {
+          opacity: 0;
         }
-
-        .loading-overlay {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            padding: 40px;
-            text-align: center;
+        to {
+          opacity: 1;
         }
+      }
 
-        .loading-text {
-            margin-top: 20px;
-            color: var(--text-secondary);
-            font-size: 1.1em;
-            animation: pulse 2s ease-in-out infinite;
+      .modal-content {
+        background: var(--bg-color);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 1100px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        position: relative;
+        animation: modalSlideIn 0.4s ease-out;
+        transition: background 0.3s ease;
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-50px) scale(0.9);
         }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.6;
-            }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
         }
+      }
 
-        .loading-dots {
-            display: inline-block;
-        }
+      .modal-header {
+        text-align: center;
+        margin-bottom: 25px;
+      }
 
-        .loading-dots::after {
-            content: '...';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
+      .modal-header h2 {
+        color: var(--text-color);
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
 
-        @keyframes dots {
-            0%, 20% {
-                content: '.';
-            }
-            40% {
-                content: '..';
-            }
-            60%, 100% {
-                content: '...';
-            }
-        }
+      .modal-body {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+        margin-bottom: 30px;
+        max-height: 400px;
+      }
 
-        .analysis-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            padding: 30px;
-            background: var(--analysis-bg);
-            border-left: 5px solid #667eea;
-            border-radius: 15px;
-            margin: 20px 0;
-        }
+      .modal-image {
+        flex-shrink: 0;
+        width: 400px;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 15px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
 
-        .analysis-loading .loading-spinner {
-            width: 30px;
-            height: 30px;
-            border-width: 3px;
-        }
+      .modal-text {
+        flex: 1;
+        color: var(--text-tertiary);
+        line-height: 1.6;
+        font-size: 0.95em;
+        text-align: left;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+      }
 
-        .analysis-loading-text {
-            color: var(--text-color);
-            font-size: 1em;
-            font-weight: 500;
-        }
+      .modal-text::-webkit-scrollbar {
+        width: 6px;
+      }
 
-        .dilemma-loading {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 40px;
-            margin-bottom: 30px;
-            border-left: 5px solid #667eea;
-        }
+      .modal-text::-webkit-scrollbar-track {
+        background: var(--border-color);
+        border-radius: 10px;
+      }
 
-        /* Modal Styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            animation: fadeInOverlay 0.3s ease-out;
-        }
+      .modal-text::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 10px;
+      }
 
-        .modal-overlay.show {
-            display: flex;
-        }
+      .modal-text::-webkit-scrollbar-thumb:hover {
+        background: #764ba2;
+      }
 
-        @keyframes fadeInOverlay {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
+      .modal-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
 
-        .modal-content {
-            background: var(--bg-color);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 1100px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            position: relative;
-            animation: modalSlideIn 0.4s ease-out;
-            transition: background 0.3s ease;
-        }
+      .modal-btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
 
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
+      .modal-btn-close {
+        background: #6c757d;
+        color: white;
+      }
 
-        .modal-header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+      .modal-btn-close:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+      }
 
-        .modal-header h2 {
-            color: var(--text-color);
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
+      .modal-btn-next {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
 
+      .modal-btn-next:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      .modal-btn:active {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 768px) {
         .modal-body {
-            display: flex;
-            gap: 30px;
-            align-items: flex-start;
-            margin-bottom: 30px;
-            max-height: 400px;
+          flex-direction: column;
+          gap: 20px;
+          max-height: none;
         }
 
         .modal-image {
-            flex-shrink: 0;
-            width: 400px;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          width: 100%;
+          max-width: 350px;
+          height: 250px;
         }
 
         .modal-text {
-            flex: 1;
-            color: var(--text-tertiary);
-            line-height: 1.6;
-            font-size: 0.95em;
-            text-align: left;
-            max-height: 300px;
-            overflow-y: auto;
-            padding-right: 10px;
+          text-align: center;
+          max-height: 250px;
         }
 
-        .modal-text::-webkit-scrollbar {
-            width: 6px;
+        .modal-content {
+          padding: 30px 20px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 20px;
+          margin: 10px;
         }
 
-        .modal-text::-webkit-scrollbar-track {
-            background: var(--border-color);
-            border-radius: 10px;
+        .header h1 {
+          font-size: 2em;
         }
 
-        .modal-text::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 10px;
+        .options {
+          grid-template-columns: 1fr;
         }
 
-        .modal-text::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
+        .dark-mode-toggle {
+          width: 40px;
+          height: 40px;
+          font-size: 18px;
         }
+      }
 
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
+      /* Estilos para notificaciones de logros */
+      .achievements-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        max-width: 400px;
+      }
+
+      .achievement-notification {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        animation: achievementSlideIn 0.5s ease-out;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        min-width: 300px;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+
+      .achievement-notification.hiding {
+        animation: achievementSlideOut 0.5s ease-out forwards;
+      }
+
+      @keyframes achievementSlideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
         }
-
-        .modal-btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        to {
+          transform: translateX(0);
+          opacity: 1;
         }
+      }
 
-        .modal-btn-close {
-            background: #6c757d;
-            color: white;
+      @keyframes achievementSlideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
         }
-
-        .modal-btn-close:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        to {
+          transform: translateX(400px);
+          opacity: 0;
         }
+      }
 
-        .modal-btn-next {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+      .achievement-icon {
+        font-size: 3em;
+        flex-shrink: 0;
+        animation: achievementPulse 1s ease-in-out infinite;
+      }
+
+      @keyframes achievementPulse {
+        0%,
+        100% {
+          transform: scale(1);
         }
-
-        .modal-btn-next:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        50% {
+          transform: scale(1.1);
         }
+      }
 
-        .modal-btn:active {
-            transform: translateY(0);
-        }
+      .achievement-content {
+        flex: 1;
+      }
 
-        @media (max-width: 768px) {
-            .modal-body {
-                flex-direction: column;
-                gap: 20px;
-                max-height: none;
-            }
+      .achievement-title {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
 
-            .modal-image {
-                width: 100%;
-                max-width: 350px;
-                height: 250px;
-            }
+      .achievement-description {
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
 
-            .modal-text {
-                text-align: center;
-                max-height: 250px;
-            }
+      .achievements-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid var(--border-color);
+      }
 
-            .modal-content {
-                padding: 30px 20px;
-            }
-        }
+      .achievements-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-            
-            .options {
-                grid-template-columns: 1fr;
-            }
+      .achievement-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid var(--border-color);
+        transition: all 0.3s ease;
+      }
 
-            .dark-mode-toggle {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-        }
+      .achievement-card.unlocked {
+        border-color: #667eea;
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1),
+          rgba(118, 75, 162, 0.1)
+        );
+      }
 
-        /* Estilos para notificaciones de logros */
+      .achievement-card.locked {
+        opacity: 0.5;
+        filter: grayscale(100%);
+      }
+
+      .achievement-card-icon {
+        font-size: 3em;
+        margin-bottom: 10px;
+      }
+
+      .achievement-card-name {
+        font-weight: bold;
+        color: var(--text-color);
+        margin-bottom: 5px;
+        font-size: 1em;
+      }
+
+      .achievement-card-description {
+        font-size: 0.85em;
+        color: var(--text-secondary);
+      }
+
+      @media (max-width: 768px) {
         .achievements-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-width: 400px;
+          right: 10px;
+          top: 10px;
+          max-width: calc(100% - 20px);
         }
 
         .achievement-notification {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            animation: achievementSlideIn 0.5s ease-out;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            min-width: 300px;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
-        .achievement-notification.hiding {
-            animation: achievementSlideOut 0.5s ease-out forwards;
-        }
-
-        @keyframes achievementSlideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes achievementSlideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-
-        .achievement-icon {
-            font-size: 3em;
-            flex-shrink: 0;
-            animation: achievementPulse 1s ease-in-out infinite;
-        }
-
-        @keyframes achievementPulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-        }
-
-        .achievement-content {
-            flex: 1;
-        }
-
-        .achievement-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .achievement-description {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .achievements-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid var(--border-color);
+          min-width: auto;
+          max-width: 100%;
         }
 
         .achievements-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         }
-
-        .achievement-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            border: 2px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-
-        .achievement-card.unlocked {
-            border-color: #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-        }
-
-        .achievement-card.locked {
-            opacity: 0.5;
-            filter: grayscale(100%);
-        }
-
-        .achievement-card-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        .achievement-card-name {
-            font-weight: bold;
-            color: var(--text-color);
-            margin-bottom: 5px;
-            font-size: 1em;
-        }
-
-        .achievement-card-description {
-            font-size: 0.85em;
-            color: var(--text-secondary);
-        }
-
-        @media (max-width: 768px) {
-            .achievements-container {
-                right: 10px;
-                top: 10px;
-                max-width: calc(100% - 20px);
-            }
-
-            .achievement-notification {
-                min-width: auto;
-                max-width: 100%;
-            }
-
-            .achievements-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <button class="dark-mode-toggle" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Activar/Desactivar modo oscuro">
-                🌙
+      <div class="header">
+        <button
+          class="dark-mode-toggle"
+          id="dark-mode-toggle"
+          onclick="toggleDarkMode()"
+          title="Activar/Desactivar modo oscuro"
+        >
+          🌙
+        </button>
+        <h1>🧠 Ethical Dilemma Simulator</h1>
+        <p>
+          Explora tus principios morales a través de dilemas éticos desafiantes
+        </p>
+      </div>
+
+      <div id="setup-screen" class="game-setup">
+        <div class="input-group">
+          <label for="player-name">¿Cómo te gustaría que te llamemos?</label>
+          <input
+            type="text"
+            id="player-name"
+            placeholder="Tu nombre"
+            maxlength="50"
+          />
+        </div>
+        <button class="btn" onclick="startGame()">
+          Comenzar Aventura Ética
+        </button>
+      </div>
+
+      <div id="game-screen" class="game-area">
+        <div id="decision-counter" class="decision-counter"></div>
+        <div id="dilemma-container"></div>
+        <div id="options-container" class="options"></div>
+        <div id="analysis-container"></div>
+        <div style="text-align: center">
+          <button id="next-btn" class="btn hidden" onclick="nextDilemma()">
+            Siguiente Dilema
+          </button>
+          <div id="continue-options" class="continue-playing hidden">
+            <button class="btn" onclick="continuePlaying()">
+              Continuar Jugando
             </button>
-            <h1>🧠 Ethical Dilemma Simulator</h1>
-            <p>Explora tus principios morales a través de dilemas éticos desafiantes</p>
+            <button
+              class="btn"
+              onclick="showStats()"
+              style="background: #764ba2"
+            >
+              Ver Estadísticas
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div id="setup-screen" class="game-setup">
-            <div class="input-group">
-                <label for="player-name">¿Cómo te gustaría que te llamemos?</label>
-                <input type="text" id="player-name" placeholder="Tu nombre" maxlength="50">
-            </div>
-            <button class="btn" onclick="startGame()">Comenzar Aventura Ética</button>
+      <div id="stats-screen" class="game-area">
+        <div class="stats">
+          <h3>📊 Tu Perfil Ético</h3>
+          <div id="stats-container"></div>
+          <div style="text-align: center; margin-top: 20px">
+            <button class="btn" onclick="restartGame()">Jugar de Nuevo</button>
+          </div>
         </div>
-
-        <div id="game-screen" class="game-area">
-            <div id="decision-counter" class="decision-counter"></div>
-            <div id="dilemma-container"></div>
-            <div id="options-container" class="options"></div>
-            <div id="analysis-container"></div>
-            <div style="text-align: center;">
-                <button id="next-btn" class="btn hidden" onclick="nextDilemma()">Siguiente Dilema</button>
-                <div id="continue-options" class="continue-playing hidden">
-                    <button class="btn" onclick="continuePlaying()">Continuar Jugando</button>
-                    <button class="btn" onclick="showStats()" style="background: #764ba2;">Ver Estadísticas</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="stats-screen" class="game-area">
-            <div class="stats">
-                <h3>📊 Tu Perfil Ético</h3>
-                <div id="stats-container"></div>
-                <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn" onclick="restartGame()">Jugar de Nuevo</button>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
     <!-- Modal para mostrar el resultado del dilema -->
     <div id="decision-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>✅ Decisión Registrada</h2>
-            </div>
-            <div class="modal-body">
-                <img id="modal-image" src="" alt="Marco ético" class="modal-image" style="display: none;">
-                <div id="modal-text" class="modal-text"></div>
-            </div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-close" onclick="closeModal()">Cerrar</button>
-                <button class="modal-btn modal-btn-next" onclick="closeModalAndNext()">Siguiente Dilema</button>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>✅ Decisión Registrada</h2>
         </div>
+        <div class="modal-body">
+          <img
+            id="modal-image"
+            src=""
+            alt="Marco ético"
+            class="modal-image"
+            style="display: none"
+          />
+          <div id="modal-text" class="modal-text"></div>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-close" onclick="closeModal()">
+            Cerrar
+          </button>
+          <button
+            class="modal-btn modal-btn-next"
+            onclick="closeModalAndNext()"
+          >
+            Siguiente Dilema
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Contenedor para notificaciones de logros -->
     <div id="achievements-container" class="achievements-container"></div>
 
     <script>
-        let gameId = null;
-        let currentDilemma = null;
-        let decisionCount = 0;
-        const MIN_DILEMMAS_FOR_STATS = 3;
+      let gameId = null;
+      let currentDilemma = null;
+      let decisionCount = 0;
+      const MIN_DILEMMAS_FOR_STATS = 3;
 
-        async function startGame() {
-            const playerName = document.getElementById('player-name').value.trim() || 'Anónimo';
-            
+      async function startGame() {
+        const playerName =
+          document.getElementById("player-name").value.trim() || "Anónimo";
+
+        try {
+          const response = await fetch("/api/start_game", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ player_name: playerName }),
+          });
+
+          if (!response.ok) {
+            // Try to parse error response
+            let errorMsg = "Error al iniciar el juego.";
             try {
-                const response = await fetch('/api/start_game', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ player_name: playerName })
-                });
-                
-                const data = await response.json();
-                gameId = data.game_id;
-                
-                document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('game-screen').style.display = 'block';
-                document.getElementById('game-screen').classList.add('fade-in');
-                
-                nextDilemma();
-            } catch (error) {
-                console.error('Error starting game:', error);
-                alert('Error al iniciar el juego. Por favor, recarga la página.');
+              const errorData = await response.json();
+              errorMsg = errorData.message || errorMsg;
+            } catch (parseErr) {
+              // Response was not JSON (likely HTML error page)
+              errorMsg = `Error del servidor (${response.status}). Por favor, recarga la página.`;
             }
-        }
+            console.error("Start game error:", errorMsg);
+            alert(errorMsg);
+            return;
+          }
 
-        async function nextDilemma() {
-            const dilemmaContainer = document.getElementById('dilemma-container');
-            const optionsContainer = document.getElementById('options-container');
-            const analysisContainer = document.getElementById('analysis-container');
-            const nextBtn = document.getElementById('next-btn');
-            const continueOptions = document.getElementById('continue-options');
-            
-            // Mostrar indicador de carga
-            showDilemmaLoading(dilemmaContainer, optionsContainer);
-            
-            // Ocultar análisis y botones
-            analysisContainer.innerHTML = '';
-            nextBtn.classList.add('hidden');
-            continueOptions.classList.add('hidden');
-            
-            try {
-                const response = await fetch('/api/get_dilemma');
-                
-                if (!response.ok) {
-                    throw new Error('Error al obtener el dilema');
-                }
-                
-                const dilemma = await response.json();
-                currentDilemma = dilemma;
-                
-                // Ocultar loader y mostrar dilema
-                displayDilemma(dilemma);
-            } catch (error) {
-                console.error('Error getting dilemma:', error);
-                dilemmaContainer.innerHTML = `
+          const data = await response.json();
+          if (!data.game_id) {
+            throw new Error("No game_id in response");
+          }
+          gameId = data.game_id;
+
+          document.getElementById("setup-screen").style.display = "none";
+          document.getElementById("game-screen").style.display = "block";
+          document.getElementById("game-screen").classList.add("fade-in");
+
+          nextDilemma();
+        } catch (error) {
+          console.error("Error starting game:", error);
+          alert("Error al iniciar el juego. Por favor, recarga la página.");
+        }
+      }
+
+      async function nextDilemma() {
+        const dilemmaContainer = document.getElementById("dilemma-container");
+        const optionsContainer = document.getElementById("options-container");
+        const analysisContainer = document.getElementById("analysis-container");
+        const nextBtn = document.getElementById("next-btn");
+        const continueOptions = document.getElementById("continue-options");
+
+        // Mostrar indicador de carga
+        showDilemmaLoading(dilemmaContainer, optionsContainer);
+
+        // Ocultar análisis y botones
+        analysisContainer.innerHTML = "";
+        nextBtn.classList.add("hidden");
+        continueOptions.classList.add("hidden");
+
+        try {
+          const response = await fetch("/api/get_dilemma");
+
+          if (!response.ok) {
+            throw new Error("Error al obtener el dilema");
+          }
+
+          const dilemma = await response.json();
+          currentDilemma = dilemma;
+
+          // Ocultar loader y mostrar dilema
+          displayDilemma(dilemma);
+        } catch (error) {
+          console.error("Error getting dilemma:", error);
+          dilemmaContainer.innerHTML = `
                     <div class="dilemma-card" style="border-left-color: #dc3545;">
                         <h2>❌ Error</h2>
                         <p>Error al obtener el dilema. Por favor, intenta de nuevo.</p>
                         <button class="btn" onclick="nextDilemma()" style="margin-top: 15px;">Reintentar</button>
                     </div>
                 `;
-                optionsContainer.innerHTML = '';
-            }
+          optionsContainer.innerHTML = "";
         }
-        
-        function showDilemmaLoading(container, optionsContainer) {
-            container.innerHTML = `
+      }
+
+      function showDilemmaLoading(container, optionsContainer) {
+        container.innerHTML = `
                 <div class="dilemma-loading">
                     <div class="loading-overlay">
                         <div class="loading-spinner"></div>
@@ -975,133 +1040,140 @@
                     </div>
                 </div>
             `;
-            optionsContainer.innerHTML = '';
-        }
+        optionsContainer.innerHTML = "";
+      }
 
-        function displayDilemma(dilemma) {
-            const dilemmaContainer = document.getElementById('dilemma-container');
-            const optionsContainer = document.getElementById('options-container');
-            const nextBtn = document.getElementById('next-btn');
-            const continueOptions = document.getElementById('continue-options');
-            const decisionCounter = document.getElementById('decision-counter');
-            
-            // Asegurar que el modal esté cerrado
-            document.getElementById('decision-modal').classList.remove('show');
-            continueOptions.classList.add('hidden');
-            
-            // Actualizar contador
-            decisionCounter.textContent = `Dilemas respondidos: ${decisionCount} | Mínimo para estadísticas: ${MIN_DILEMMAS_FOR_STATS}`;
-            
-            // Mostrar categoría
-            const category = dilemma.category || 'general';
-            const categoryNames = {
-                'clásico': '🎯 Clásico',
-                'medicina': '⚕️ Medicina',
-                'tecnología': '💻 Tecnología',
-                'medio ambiente': '🌍 Medio Ambiente',
-                'negocios': '💼 Negocios',
-                'sociedad': '👥 Sociedad',
-                'educación': '📚 Educación',
-                'política': '🏛️ Política',
-                'general': '📋 General'
-            };
-            
-            // Construir HTML del dilema con imagen si está disponible
-            const imageHTML = dilemma.image_url 
-                ? `<img src="${dilemma.image_url}" alt="Imagen del dilema" class="dilemma-image" onerror="this.style.display='none'">` 
-                : '';
-            
-            dilemmaContainer.innerHTML = `
+      function displayDilemma(dilemma) {
+        const dilemmaContainer = document.getElementById("dilemma-container");
+        const optionsContainer = document.getElementById("options-container");
+        const nextBtn = document.getElementById("next-btn");
+        const continueOptions = document.getElementById("continue-options");
+        const decisionCounter = document.getElementById("decision-counter");
+
+        // Asegurar que el modal esté cerrado
+        document.getElementById("decision-modal").classList.remove("show");
+        continueOptions.classList.add("hidden");
+
+        // Actualizar contador
+        decisionCounter.textContent = `Dilemas respondidos: ${decisionCount} | Mínimo para estadísticas: ${MIN_DILEMMAS_FOR_STATS}`;
+
+        // Mostrar categoría
+        const category = dilemma.category || "general";
+        const categoryNames = {
+          clásico: "🎯 Clásico",
+          medicina: "⚕️ Medicina",
+          tecnología: "💻 Tecnología",
+          "medio ambiente": "🌍 Medio Ambiente",
+          negocios: "💼 Negocios",
+          sociedad: "👥 Sociedad",
+          educación: "📚 Educación",
+          política: "🏛️ Política",
+          general: "📋 General",
+        };
+
+        // Construir HTML del dilema con imagen si está disponible
+        const imageHTML = dilemma.image_url
+          ? `<img src="${dilemma.image_url}" alt="Imagen del dilema" class="dilemma-image" onerror="this.style.display='none'">`
+          : "";
+
+        dilemmaContainer.innerHTML = `
                 <div class="dilemma-card">
-                    <span class="category-badge">${categoryNames[category] || '📋 ' + category}</span>
+                    <span class="category-badge">${
+                      categoryNames[category] || "📋 " + category
+                    }</span>
                     <h2>Dilema #${dilemma.id}</h2>
                     ${imageHTML}
                     <p>${dilemma.scenario}</p>
                 </div>
             `;
-            
-            optionsContainer.innerHTML = '';
-            dilemma.options.forEach((option, index) => {
-                const optionBtn = document.createElement('button');
-                optionBtn.className = 'option-btn';
-                optionBtn.textContent = option.text;
-                optionBtn.onclick = () => selectOption(option, optionBtn);
-                optionsContainer.appendChild(optionBtn);
-            });
-            
-            nextBtn.classList.add('hidden');
-        }
 
-        async function selectOption(option, buttonElement) {
-            // Remove selection from other buttons
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.classList.remove('selected');
-                btn.disabled = true;
+        optionsContainer.innerHTML = "";
+        dilemma.options.forEach((option, index) => {
+          const optionBtn = document.createElement("button");
+          optionBtn.className = "option-btn";
+          optionBtn.textContent = option.text;
+          optionBtn.onclick = () => selectOption(option, optionBtn);
+          optionsContainer.appendChild(optionBtn);
+        });
+
+        nextBtn.classList.add("hidden");
+      }
+
+      async function selectOption(option, buttonElement) {
+        // Remove selection from other buttons
+        document.querySelectorAll(".option-btn").forEach((btn) => {
+          btn.classList.remove("selected");
+          btn.disabled = true;
+        });
+
+        // Mark this button as selected
+        buttonElement.classList.add("selected");
+
+        // Mostrar indicador de carga en el modal
+        showAnalysisLoading();
+
+        try {
+          const response = await fetch("/api/make_decision", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              game_id: gameId,
+              dilemma_id: currentDilemma.id,
+              dilemma_text: currentDilemma.scenario,
+              dilemma_category: currentDilemma.category || "general",
+              chosen_option: option.text,
+              ethical_framework: option.ethical_value,
+              full_dilemma: currentDilemma,
+            }),
+          });
+
+          // Verificar si la respuesta es exitosa
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || "Error al registrar la decisión"
+            );
+          }
+
+          const result = await response.json();
+          decisionCount++;
+
+          // Mostrar notificaciones de logros desbloqueados
+          if (
+            result.newly_unlocked_achievements &&
+            result.newly_unlocked_achievements.length > 0
+          ) {
+            result.newly_unlocked_achievements.forEach((achievement) => {
+              showAchievementNotification(achievement);
             });
-            
-            // Mark this button as selected
-            buttonElement.classList.add('selected');
-            
-            // Mostrar indicador de carga en el modal
-            showAnalysisLoading();
-            
+          }
+
+          // Llenar y mostrar el modal con el resultado
+          showModal(result, option.ethical_value);
+        } catch (error) {
+          console.error("Error recording decision:", error);
+
+          // Intentar obtener mensaje de error del servidor
+          let errorMessage =
+            "Error al registrar tu decisión. Por favor, intenta de nuevo.";
+          if (error.response) {
             try {
-                const response = await fetch('/api/make_decision', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        game_id: gameId,
-                        dilemma_id: currentDilemma.id,
-                        dilemma_text: currentDilemma.scenario,
-                        dilemma_category: currentDilemma.category || 'general',
-                        chosen_option: option.text,
-                        ethical_framework: option.ethical_value,
-                        full_dilemma: currentDilemma
-                    })
-                });
-                
-                // Verificar si la respuesta es exitosa
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Error al registrar la decisión');
-                }
-                
-                const result = await response.json();
-                decisionCount++;
-                
-                // Mostrar notificaciones de logros desbloqueados
-                if (result.newly_unlocked_achievements && result.newly_unlocked_achievements.length > 0) {
-                    result.newly_unlocked_achievements.forEach(achievement => {
-                        showAchievementNotification(achievement);
-                    });
-                }
-                
-                // Llenar y mostrar el modal con el resultado
-                showModal(result, option.ethical_value);
-                
-            } catch (error) {
-                console.error('Error recording decision:', error);
-                
-                // Intentar obtener mensaje de error del servidor
-                let errorMessage = 'Error al registrar tu decisión. Por favor, intenta de nuevo.';
-                if (error.response) {
-                    try {
-                        const errorData = await error.response.json();
-                        errorMessage = errorData.message || errorMessage;
-                    } catch (e) {
-                        // Si no se puede parsear, usar mensaje por defecto
-                    }
-                }
-                
-                // Mostrar error en el modal
-                const modalText = document.getElementById('modal-text');
-                const modalImage = document.getElementById('modal-image');
-                const modal = document.getElementById('decision-modal');
-                
-                modalImage.style.display = 'none';
-                modalText.innerHTML = `
+              const errorData = await error.response.json();
+              errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+              // Si no se puede parsear, usar mensaje por defecto
+            }
+          }
+
+          // Mostrar error en el modal
+          const modalText = document.getElementById("modal-text");
+          const modalImage = document.getElementById("modal-image");
+          const modal = document.getElementById("decision-modal");
+
+          modalImage.style.display = "none";
+          modalText.innerHTML = `
                     <div style="text-align: center; padding: 20px;">
                         <div style="font-size: 3em; margin-bottom: 15px;">❌</div>
                         <p style="color: #dc3545; font-size: 1.1em; margin-bottom: 10px;"><strong>Error</strong></p>
@@ -1109,79 +1181,83 @@
                         <p style="font-size: 0.85em; color: var(--text-secondary);">Por favor, recarga la página si el problema persiste.</p>
                     </div>
                 `;
-                modal.classList.add('show');
-                
-                document.querySelectorAll('.option-btn').forEach(btn => {
-                    btn.disabled = false;
-                });
-            }
+          modal.classList.add("show");
+
+          document.querySelectorAll(".option-btn").forEach((btn) => {
+            btn.disabled = false;
+          });
+        }
+      }
+
+      function showModal(result, ethicalFramework) {
+        const modal = document.getElementById("decision-modal");
+        const modalImage = document.getElementById("modal-image");
+        const modalText = document.getElementById("modal-text");
+
+        // Configurar imagen
+        if (result.ethical_framework_image) {
+          modalImage.src = result.ethical_framework_image;
+          modalImage.style.display = "block";
+          modalImage.onerror = function () {
+            this.style.display = "none";
+          };
+        } else {
+          modalImage.style.display = "none";
         }
 
-        function showModal(result, ethicalFramework) {
-            const modal = document.getElementById('decision-modal');
-            const modalImage = document.getElementById('modal-image');
-            const modalText = document.getElementById('modal-text');
-            
-            // Configurar imagen
-            if (result.ethical_framework_image) {
-                modalImage.src = result.ethical_framework_image;
-                modalImage.style.display = 'block';
-                modalImage.onerror = function() {
-                    this.style.display = 'none';
-                };
-            } else {
-                modalImage.style.display = 'none';
-            }
-            
-            // Configurar texto
-            let textContent = '';
-            if (result.analysis) {
-                textContent = `<p><strong>Marco Ético: ${getFrameworkName(ethicalFramework)}</strong></p><p>${result.analysis}</p>`;
-            } else {
-                textContent = `<p>Has elegido una opción basada en <strong>${getFrameworkName(ethicalFramework)}</strong>.</p>`;
-            }
-            modalText.innerHTML = textContent;
-            
-            // Mostrar modal
-            modal.classList.add('show');
+        // Configurar texto
+        let textContent = "";
+        if (result.analysis) {
+          textContent = `<p><strong>Marco Ético: ${getFrameworkName(
+            ethicalFramework
+          )}</strong></p><p>${result.analysis}</p>`;
+        } else {
+          textContent = `<p>Has elegido una opción basada en <strong>${getFrameworkName(
+            ethicalFramework
+          )}</strong>.</p>`;
         }
+        modalText.innerHTML = textContent;
 
-        function closeModal() {
-            const modal = document.getElementById('decision-modal');
-            modal.classList.remove('show');
-            
-            // Habilitar botones nuevamente
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.disabled = false;
-            });
-            
-            // Mostrar opciones después de cerrar
-            const nextBtn = document.getElementById('next-btn');
-            const continueOptions = document.getElementById('continue-options');
-            
-            if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
-                nextBtn.classList.remove('hidden');
-                continueOptions.classList.remove('hidden');
-            } else {
-                nextBtn.classList.remove('hidden');
-            }
-        }
+        // Mostrar modal
+        modal.classList.add("show");
+      }
 
-        function closeModalAndNext() {
-            closeModal();
-            nextDilemma();
+      function closeModal() {
+        const modal = document.getElementById("decision-modal");
+        modal.classList.remove("show");
+
+        // Habilitar botones nuevamente
+        document.querySelectorAll(".option-btn").forEach((btn) => {
+          btn.disabled = false;
+        });
+
+        // Mostrar opciones después de cerrar
+        const nextBtn = document.getElementById("next-btn");
+        const continueOptions = document.getElementById("continue-options");
+
+        if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
+          nextBtn.classList.remove("hidden");
+          continueOptions.classList.remove("hidden");
+        } else {
+          nextBtn.classList.remove("hidden");
         }
-        
-        function showAnalysisLoading() {
-            const modal = document.getElementById('decision-modal');
-            const modalImage = document.getElementById('modal-image');
-            const modalText = document.getElementById('modal-text');
-            
-            // Ocultar imagen durante la carga
-            modalImage.style.display = 'none';
-            
-            // Mostrar indicador de carga
-            modalText.innerHTML = `
+      }
+
+      function closeModalAndNext() {
+        closeModal();
+        nextDilemma();
+      }
+
+      function showAnalysisLoading() {
+        const modal = document.getElementById("decision-modal");
+        const modalImage = document.getElementById("modal-image");
+        const modalText = document.getElementById("modal-text");
+
+        // Ocultar imagen durante la carga
+        modalImage.style.display = "none";
+
+        // Mostrar indicador de carga
+        modalText.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <div class="loading-spinner" style="margin: 0 auto 20px;"></div>
                     <div class="analysis-loading-text">
@@ -1192,113 +1268,124 @@
                     </p>
                 </div>
             `;
-            
-            // Mostrar modal inmediatamente con el loader
-            modal.classList.add('show');
+
+        // Mostrar modal inmediatamente con el loader
+        modal.classList.add("show");
+      }
+
+      function showModal(result, ethicalFramework) {
+        const modal = document.getElementById("decision-modal");
+        const modalImage = document.getElementById("modal-image");
+        const modalText = document.getElementById("modal-text");
+
+        // Configurar imagen
+        if (result.ethical_framework_image) {
+          modalImage.src = result.ethical_framework_image;
+          modalImage.style.display = "block";
+          modalImage.onerror = function () {
+            this.style.display = "none";
+          };
+        } else {
+          modalImage.style.display = "none";
         }
 
-        function showModal(result, ethicalFramework) {
-            const modal = document.getElementById('decision-modal');
-            const modalImage = document.getElementById('modal-image');
-            const modalText = document.getElementById('modal-text');
-            
-            // Configurar imagen
-            if (result.ethical_framework_image) {
-                modalImage.src = result.ethical_framework_image;
-                modalImage.style.display = 'block';
-                modalImage.onerror = function() {
-                    this.style.display = 'none';
-                };
-            } else {
-                modalImage.style.display = 'none';
-            }
-            
-            // Configurar texto con análisis mejorado
-            let textContent = '';
-            if (result.analysis) {
-                // Formatear el análisis con saltos de línea
-                const analysisLines = result.analysis.split('\n').filter(line => line.trim());
-                const formattedAnalysis = analysisLines.map(line => {
-                    const trimmed = line.trim();
-                    // Si la línea es corta y parece un título, hacerla bold
-                    if (trimmed.length < 50 && (trimmed.includes(':') || trimmed.match(/^\d+\./))) {
-                        return `<p style="font-weight: 600; color: #667eea; margin-top: 15px; margin-bottom: 8px;">${trimmed}</p>`;
-                    }
-                    return `<p style="margin-bottom: 10px; line-height: 1.7;">${trimmed}</p>`;
-                }).join('');
-                
-                textContent = `
+        // Configurar texto con análisis mejorado
+        let textContent = "";
+        if (result.analysis) {
+          // Formatear el análisis con saltos de línea
+          const analysisLines = result.analysis
+            .split("\n")
+            .filter((line) => line.trim());
+          const formattedAnalysis = analysisLines
+            .map((line) => {
+              const trimmed = line.trim();
+              // Si la línea es corta y parece un título, hacerla bold
+              if (
+                trimmed.length < 50 &&
+                (trimmed.includes(":") || trimmed.match(/^\d+\./))
+              ) {
+                return `<p style="font-weight: 600; color: #667eea; margin-top: 15px; margin-bottom: 8px;">${trimmed}</p>`;
+              }
+              return `<p style="margin-bottom: 10px; line-height: 1.7;">${trimmed}</p>`;
+            })
+            .join("");
+
+          textContent = `
                     <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color);">
                         <p style="font-weight: 600; color: #667eea; font-size: 1.1em; margin-bottom: 5px;">
-                            💡 Marco Ético: ${getFrameworkName(ethicalFramework)}
+                            💡 Marco Ético: ${getFrameworkName(
+                              ethicalFramework
+                            )}
                         </p>
                     </div>
                     <div style="color: var(--text-tertiary); line-height: 1.8;">
                         ${formattedAnalysis}
                     </div>
                 `;
-            } else {
-                textContent = `
+        } else {
+          textContent = `
                     <div style="text-align: center; padding: 30px;">
                         <div style="font-size: 3em; margin-bottom: 15px;">✅</div>
                         <p style="font-size: 1.1em; margin-bottom: 10px; color: var(--text-color);">
-                            Has elegido una opción basada en <strong style="color: #667eea;">${getFrameworkName(ethicalFramework)}</strong>
+                            Has elegido una opción basada en <strong style="color: #667eea;">${getFrameworkName(
+                              ethicalFramework
+                            )}</strong>
                         </p>
                         <p style="color: var(--text-secondary); font-size: 0.9em;">
                             Tu decisión ha sido registrada exitosamente.
                         </p>
                     </div>
                 `;
-            }
-            modalText.innerHTML = textContent;
-            
-            // El modal ya está visible desde showAnalysisLoading()
-            // Solo actualizamos el contenido aquí
         }
+        modalText.innerHTML = textContent;
 
-        function closeModal() {
-            const modal = document.getElementById('decision-modal');
-            modal.classList.remove('show');
-            
-            // Habilitar botones nuevamente
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.disabled = false;
-            });
-            
-            // Mostrar opciones después de cerrar
-            const nextBtn = document.getElementById('next-btn');
-            const continueOptions = document.getElementById('continue-options');
-            
-            if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
-                nextBtn.classList.remove('hidden');
-                continueOptions.classList.remove('hidden');
-            } else {
-                nextBtn.classList.remove('hidden');
-            }
-        }
+        // El modal ya está visible desde showAnalysisLoading()
+        // Solo actualizamos el contenido aquí
+      }
 
-        function closeModalAndNext() {
-            closeModal();
-            nextDilemma();
-        }
-        
-        function getFrameworkName(framework) {
-            const frameworkNames = {
-                'utilitarianismo': 'Utilitarismo',
-                'deontologia': 'Deontología',
-                'autonomia': 'Autonomía',
-                'paternalismo': 'Paternalismo',
-                'ecocentrismo': 'Ecocentrismo',
-                'antropocentrismo': 'Antropocentrismo'
-            };
-            return frameworkNames[framework] || framework;
-        }
+      function closeModal() {
+        const modal = document.getElementById("decision-modal");
+        modal.classList.remove("show");
 
-        function showAchievementNotification(achievement) {
-            const container = document.getElementById('achievements-container');
-            const notification = document.createElement('div');
-            notification.className = 'achievement-notification';
-            notification.innerHTML = `
+        // Habilitar botones nuevamente
+        document.querySelectorAll(".option-btn").forEach((btn) => {
+          btn.disabled = false;
+        });
+
+        // Mostrar opciones después de cerrar
+        const nextBtn = document.getElementById("next-btn");
+        const continueOptions = document.getElementById("continue-options");
+
+        if (decisionCount >= MIN_DILEMMAS_FOR_STATS) {
+          nextBtn.classList.remove("hidden");
+          continueOptions.classList.remove("hidden");
+        } else {
+          nextBtn.classList.remove("hidden");
+        }
+      }
+
+      function closeModalAndNext() {
+        closeModal();
+        nextDilemma();
+      }
+
+      function getFrameworkName(framework) {
+        const frameworkNames = {
+          utilitarianismo: "Utilitarismo",
+          deontologia: "Deontología",
+          autonomia: "Autonomía",
+          paternalismo: "Paternalismo",
+          ecocentrismo: "Ecocentrismo",
+          antropocentrismo: "Antropocentrismo",
+        };
+        return frameworkNames[framework] || framework;
+      }
+
+      function showAchievementNotification(achievement) {
+        const container = document.getElementById("achievements-container");
+        const notification = document.createElement("div");
+        notification.className = "achievement-notification";
+        notification.innerHTML = `
                 <div class="achievement-icon">${achievement.icon}</div>
                 <div class="achievement-content">
                     <div class="achievement-title">🏆 ¡Logro Desbloqueado!</div>
@@ -1308,72 +1395,78 @@
                     </div>
                 </div>
             `;
-            
-            container.appendChild(notification);
-            
-            // Auto-ocultar después de 5 segundos
-            setTimeout(() => {
-                notification.classList.add('hiding');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 500);
-            }, 5000);
-        }
-        
-        function continuePlaying() {
-            const nextBtn = document.getElementById('next-btn');
-            const continueOptions = document.getElementById('continue-options');
-            nextBtn.classList.add('hidden');
-            continueOptions.classList.add('hidden');
-            nextDilemma();
-        }
 
-        async function showStats() {
-            try {
-                const response = await fetch(`/api/get_stats/${gameId}`);
-                const stats = await response.json();
-                
-                const statsContainer = document.getElementById('stats-container');
-                statsContainer.innerHTML = '';
-                
-                // Título con información del jugador
-                const title = document.createElement('div');
-                title.style.marginBottom = '20px';
-                title.style.paddingBottom = '15px';
-                title.style.borderBottom = '2px solid var(--border-color)';
-                title.innerHTML = `
+        container.appendChild(notification);
+
+        // Auto-ocultar después de 5 segundos
+        setTimeout(() => {
+          notification.classList.add("hiding");
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 500);
+        }, 5000);
+      }
+
+      function continuePlaying() {
+        const nextBtn = document.getElementById("next-btn");
+        const continueOptions = document.getElementById("continue-options");
+        nextBtn.classList.add("hidden");
+        continueOptions.classList.add("hidden");
+        nextDilemma();
+      }
+
+      async function showStats() {
+        try {
+          const response = await fetch(`/api/get_stats/${gameId}`);
+          const stats = await response.json();
+
+          const statsContainer = document.getElementById("stats-container");
+          statsContainer.innerHTML = "";
+
+          // Título con información del jugador
+          const title = document.createElement("div");
+          title.style.marginBottom = "20px";
+          title.style.paddingBottom = "15px";
+          title.style.borderBottom = "2px solid var(--border-color)";
+          title.innerHTML = `
                     <h2 style="color: var(--text-color); margin-bottom: 5px;">📊 Estadísticas de ${stats.player_name}</h2>
                     <p style="color: var(--text-secondary);">Total de dilemas respondidos: <strong>${stats.total_decisions}</strong></p>
                 `;
-                statsContainer.appendChild(title);
-                
-                // Estadísticas de marcos éticos
-                if (Object.keys(stats.framework_stats).length > 0) {
-                    const frameworksTitle = document.createElement('h3');
-                    frameworksTitle.textContent = '🎯 Marcos Éticos';
-                    frameworksTitle.style.marginTop = '20px';
-                    frameworksTitle.style.marginBottom = '15px';
-                    frameworksTitle.style.color = '#667eea';
-                    statsContainer.appendChild(frameworksTitle);
-                    
-                    const frameworkNames = {
-                        'utilitarianismo': 'Utilitarismo (mayor bien para mayoría)',
-                        'deontologia': 'Deontología (deberes morales)',
-                        'autonomia': 'Autonomía (respeto por decisiones)',
-                        'paternalismo': 'Paternalismo (proteger al individuo)',
-                        'ecocentrismo': 'Ecocentrismo (valor al medio ambiente)',
-                        'antropocentrismo': 'Antropocentrismo (valor humano primero)'
-                    };
-                    
-                    Object.entries(stats.framework_stats).forEach(([framework, count]) => {
-                        const percentage = (count / stats.total_decisions * 100).toFixed(1);
-                        const statItem = document.createElement('div');
-                        statItem.className = 'stat-item';
-                        statItem.innerHTML = `
+          statsContainer.appendChild(title);
+
+          // Estadísticas de marcos éticos
+          if (Object.keys(stats.framework_stats).length > 0) {
+            const frameworksTitle = document.createElement("h3");
+            frameworksTitle.textContent = "🎯 Marcos Éticos";
+            frameworksTitle.style.marginTop = "20px";
+            frameworksTitle.style.marginBottom = "15px";
+            frameworksTitle.style.color = "#667eea";
+            statsContainer.appendChild(frameworksTitle);
+
+            const frameworkNames = {
+              utilitarianismo: "Utilitarismo (mayor bien para mayoría)",
+              deontologia: "Deontología (deberes morales)",
+              autonomia: "Autonomía (respeto por decisiones)",
+              paternalismo: "Paternalismo (proteger al individuo)",
+              ecocentrismo: "Ecocentrismo (valor al medio ambiente)",
+              antropocentrismo: "Antropocentrismo (valor humano primero)",
+            };
+
+            Object.entries(stats.framework_stats).forEach(
+              ([framework, count]) => {
+                const percentage = (
+                  (count / stats.total_decisions) *
+                  100
+                ).toFixed(1);
+                const statItem = document.createElement("div");
+                statItem.className = "stat-item";
+                statItem.innerHTML = `
                             <div>
-                                <strong>${frameworkNames[framework] || framework}</strong>
+                                <strong>${
+                                  frameworkNames[framework] || framework
+                                }</strong>
                                 <div style="font-size: 0.9em; color: var(--text-secondary);">${count} decisiones</div>
                             </div>
                             <div style="text-align: right;">
@@ -1383,154 +1476,174 @@
                                 </div>
                             </div>
                         `;
-                        statsContainer.appendChild(statItem);
-                    });
-                }
-                
-                // Estadísticas por categoría
-                if (stats.category_stats && Object.keys(stats.category_stats).length > 0) {
-                    const categoriesTitle = document.createElement('h3');
-                    categoriesTitle.textContent = '📂 Categorías';
-                    categoriesTitle.style.marginTop = '30px';
-                    categoriesTitle.style.marginBottom = '15px';
-                    categoriesTitle.style.color = '#764ba2';
-                    statsContainer.appendChild(categoriesTitle);
-                    
-                    const categoryNames = {
-                        'clásico': '🎯 Clásico',
-                        'medicina': '⚕️ Medicina',
-                        'tecnología': '💻 Tecnología',
-                        'medio ambiente': '🌍 Medio Ambiente',
-                        'negocios': '💼 Negocios',
-                        'sociedad': '👥 Sociedad',
-                        'educación': '📚 Educación',
-                        'política': '🏛️ Política',
-                        'general': '📋 General'
-                    };
-                    
-                    Object.entries(stats.category_stats).forEach(([category, count]) => {
-                        const percentage = (count / stats.total_decisions * 100).toFixed(1);
-                        const statItem = document.createElement('div');
-                        statItem.className = 'stat-item';
-                        statItem.innerHTML = `
+                statsContainer.appendChild(statItem);
+              }
+            );
+          }
+
+          // Estadísticas por categoría
+          if (
+            stats.category_stats &&
+            Object.keys(stats.category_stats).length > 0
+          ) {
+            const categoriesTitle = document.createElement("h3");
+            categoriesTitle.textContent = "📂 Categorías";
+            categoriesTitle.style.marginTop = "30px";
+            categoriesTitle.style.marginBottom = "15px";
+            categoriesTitle.style.color = "#764ba2";
+            statsContainer.appendChild(categoriesTitle);
+
+            const categoryNames = {
+              clásico: "🎯 Clásico",
+              medicina: "⚕️ Medicina",
+              tecnología: "💻 Tecnología",
+              "medio ambiente": "🌍 Medio Ambiente",
+              negocios: "💼 Negocios",
+              sociedad: "👥 Sociedad",
+              educación: "📚 Educación",
+              política: "🏛️ Política",
+              general: "📋 General",
+            };
+
+            Object.entries(stats.category_stats).forEach(
+              ([category, count]) => {
+                const percentage = (
+                  (count / stats.total_decisions) *
+                  100
+                ).toFixed(1);
+                const statItem = document.createElement("div");
+                statItem.className = "stat-item";
+                statItem.innerHTML = `
                             <div>
-                                <strong>${categoryNames[category] || category}</strong>
+                                <strong>${
+                                  categoryNames[category] || category
+                                }</strong>
                                 <div style="font-size: 0.9em; color: var(--text-secondary);">${count} dilemas</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 1.2em; font-weight: bold; color: var(--text-color);">${percentage}%</div>
                             </div>
                         `;
-                        statsContainer.appendChild(statItem);
-                    });
-                }
-                
-                // Sección de logros
-                try {
-                    const achievementsResponse = await fetch(`/api/get_achievements/${encodeURIComponent(stats.player_name)}`);
-                    const achievementsData = await achievementsResponse.json();
-                    
-                    const achievementsSection = document.createElement('div');
-                    achievementsSection.className = 'achievements-section';
-                    achievementsSection.innerHTML = `
+                statsContainer.appendChild(statItem);
+              }
+            );
+          }
+
+          // Sección de logros
+          try {
+            const achievementsResponse = await fetch(
+              `/api/get_achievements/${encodeURIComponent(stats.player_name)}`
+            );
+            const achievementsData = await achievementsResponse.json();
+
+            const achievementsSection = document.createElement("div");
+            achievementsSection.className = "achievements-section";
+            achievementsSection.innerHTML = `
                         <h3 style="color: #667eea; margin-bottom: 15px;">
                             🏆 Logros (${achievementsData.unlocked_count}/${achievementsData.total})
                         </h3>
                         <div class="achievements-grid" id="achievements-grid"></div>
                     `;
-                    statsContainer.appendChild(achievementsSection);
-                    
-                    const achievementsGrid = document.getElementById('achievements-grid');
-                    achievementsData.all.forEach(achievement => {
-                        const card = document.createElement('div');
-                        card.className = `achievement-card ${achievement.unlocked ? 'unlocked' : 'locked'}`;
-                        card.innerHTML = `
+            statsContainer.appendChild(achievementsSection);
+
+            const achievementsGrid =
+              document.getElementById("achievements-grid");
+            achievementsData.all.forEach((achievement) => {
+              const card = document.createElement("div");
+              card.className = `achievement-card ${
+                achievement.unlocked ? "unlocked" : "locked"
+              }`;
+              card.innerHTML = `
                             <div class="achievement-card-icon">${achievement.icon}</div>
                             <div class="achievement-card-name">${achievement.name}</div>
                             <div class="achievement-card-description">${achievement.description}</div>
                         `;
-                        achievementsGrid.appendChild(card);
-                    });
-                } catch (error) {
-                    console.error('Error obteniendo logros:', error);
-                }
-                
-                document.getElementById('game-screen').style.display = 'none';
-                document.getElementById('stats-screen').style.display = 'block';
-                document.getElementById('stats-screen').classList.add('fade-in');
-                
-                // End the game
-                await fetch('/api/end_game', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ game_id: gameId })
-                });
-            } catch (error) {
-                console.error('Error getting stats:', error);
-                alert('Error al obtener estadísticas. Por favor, intenta de nuevo.');
-            }
-        }
+              achievementsGrid.appendChild(card);
+            });
+          } catch (error) {
+            console.error("Error obteniendo logros:", error);
+          }
 
-        function restartGame() {
-            location.reload();
-        }
+          document.getElementById("game-screen").style.display = "none";
+          document.getElementById("stats-screen").style.display = "block";
+          document.getElementById("stats-screen").classList.add("fade-in");
 
-        // Allow Enter key to start game
-        document.getElementById('player-name').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                startGame();
-            }
+          // End the game
+          await fetch("/api/end_game", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ game_id: gameId }),
+          });
+        } catch (error) {
+          console.error("Error getting stats:", error);
+          alert("Error al obtener estadísticas. Por favor, intenta de nuevo.");
+        }
+      }
+
+      function restartGame() {
+        location.reload();
+      }
+
+      // Allow Enter key to start game
+      document
+        .getElementById("player-name")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            startGame();
+          }
         });
 
-        // Dark mode functionality
-        function toggleDarkMode() {
-            const body = document.body;
-            const toggle = document.getElementById('dark-mode-toggle');
-            const isDarkMode = body.classList.toggle('dark-mode');
-            
-            // Update button icon
-            toggle.textContent = isDarkMode ? '☀️' : '🌙';
-            
-            // Save preference to localStorage
-            localStorage.setItem('darkMode', isDarkMode);
+      // Dark mode functionality
+      function toggleDarkMode() {
+        const body = document.body;
+        const toggle = document.getElementById("dark-mode-toggle");
+        const isDarkMode = body.classList.toggle("dark-mode");
+
+        // Update button icon
+        toggle.textContent = isDarkMode ? "☀️" : "🌙";
+
+        // Save preference to localStorage
+        localStorage.setItem("darkMode", isDarkMode);
+      }
+
+      // Load dark mode preference on page load
+      function loadDarkModePreference() {
+        const darkMode = localStorage.getItem("darkMode") === "true";
+        const body = document.body;
+        const toggle = document.getElementById("dark-mode-toggle");
+
+        if (darkMode) {
+          body.classList.add("dark-mode");
+          toggle.textContent = "☀️";
+        } else {
+          body.classList.remove("dark-mode");
+          toggle.textContent = "🌙";
         }
+      }
 
-        // Load dark mode preference on page load
-        function loadDarkModePreference() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
-            const body = document.body;
-            const toggle = document.getElementById('dark-mode-toggle');
-            
-            if (darkMode) {
-                body.classList.add('dark-mode');
-                toggle.textContent = '☀️';
-            } else {
-                body.classList.remove('dark-mode');
-                toggle.textContent = '🌙';
-            }
-        }
+      // Initialize dark mode on page load
+      loadDarkModePreference();
 
-        // Initialize dark mode on page load
-        loadDarkModePreference();
-
-        // Cerrar modal al hacer clic en el overlay (fondo oscuro)
-        document.getElementById('decision-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
+      // Cerrar modal al hacer clic en el overlay (fondo oscuro)
+      document
+        .getElementById("decision-modal")
+        .addEventListener("click", function (e) {
+          if (e.target === this) {
+            closeModal();
+          }
         });
 
-        // Cerrar modal con la tecla Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                const modal = document.getElementById('decision-modal');
-                if (modal.classList.contains('show')) {
-                    closeModal();
-                }
-            }
-        });
+      // Cerrar modal con la tecla Escape
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          const modal = document.getElementById("decision-modal");
+          if (modal.classList.contains("show")) {
+            closeModal();
+          }
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
