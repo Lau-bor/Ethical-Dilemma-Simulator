@@ -11,7 +11,15 @@ load_dotenv()
 
 app = Flask(__name__)
 
-DATABASE = 'ethical_game.db'
+# Detect Vercel environment
+IS_VERCEL = os.getenv('VERCEL') == '1'
+
+# Use /tmp for Vercel (writable in serverless) or local for development
+if IS_VERCEL:
+    DATABASE = '/tmp/ethical_game.db'
+else:
+    DATABASE = 'ethical_game.db'
+
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
 
 # Configurar Gemini 
@@ -201,10 +209,33 @@ PREDEFINED_DILEMMAS = [
     }
 ]
 
+def get_db_connection():
+    """Get a database connection with proper settings for Vercel"""
+    try:
+        # Ensure /tmp exists in Vercel (it should, but just in case)
+        if IS_VERCEL:
+            # /tmp already exists in Vercel serverless, no need to create
+            pass
+        else:
+            # Ensure directory exists locally
+            db_dir = os.path.dirname(DATABASE) if os.path.dirname(DATABASE) else '.'
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Warning: Error creando directorio BD: {e}")
+    
+    # Connect with timeout and allow different threads (for serverless)
+    # This is necessary for Vercel's serverless functions
+    return sqlite3.connect(DATABASE, timeout=10.0, check_same_thread=False)
+
 def init_db():
     """Initialize the database with required tables"""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+    except Exception as e:
+        print(f"ERROR: No se pudo conectar a la base de datos: {e}")
+        raise
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS games (
@@ -545,7 +576,7 @@ def get_ethical_framework_image(ethical_framework):
 def cache_dilemma_image(scenario, image_url):
     """Guarda la URL de imagen en el cache del dilema"""
     try:
-        conn = sqlite3.connect(DATABASE)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             'UPDATE ai_dilemmas_cache SET image_url = ? WHERE dilemma_text = ?',
@@ -559,7 +590,7 @@ def cache_dilemma_image(scenario, image_url):
 def get_cached_dilemma_image(scenario):
     """Obtiene la imagen en cache para un dilema"""
     try:
-        conn = sqlite3.connect(DATABASE)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             'SELECT image_url FROM ai_dilemmas_cache WHERE dilemma_text = ?',
@@ -865,7 +896,7 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional, sin markdown, sin ex
 def cache_dilemma(dilemma_data):
     """Cache AI-generated dilemmas to avoid duplicates"""
     try:
-        conn = sqlite3.connect(DATABASE)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Obtener imagen para el dilema
@@ -956,7 +987,11 @@ def log_prompt(prompt, response):
 @app.route('/')
 def index():
     """Render the main game interface"""
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        print(f"ERROR rendering template: {e}")
+        return f"Error loading template: {str(e)}", 500
 
 @app.route('/api/start_game', methods=['POST'])
 def start_game():
@@ -1038,7 +1073,7 @@ def make_decision():
                 print(f"⚠️ Error generando análisis con IA: {e}")
                 # Continuar sin análisis si falla
         
-        conn = sqlite3.connect(DATABASE)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Verificar que las columnas existan antes de insertar
