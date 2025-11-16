@@ -2,6 +2,7 @@ import os
 import json
 import sqlite3
 import random
+import tempfile
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
@@ -11,7 +12,21 @@ load_dotenv()
 
 app = Flask(__name__)
 
-DATABASE = 'ethical_game.db'
+def _determine_database_path():
+    """Determine the database path, with fallback for serverless environments."""
+    db_env = os.getenv('DATABASE_PATH')
+    if db_env:
+        return db_env
+    
+    default = os.path.abspath(os.path.join(os.path.dirname(__file__), 'ethical_game.db'))
+    try:
+        with open(default, 'a'):
+            pass
+        return default
+    except Exception:
+        return os.path.join(tempfile.gettempdir(), 'ethical_game.db')
+
+DATABASE = _determine_database_path()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
 
 # Configurar Gemini 
@@ -961,20 +976,54 @@ def index():
 @app.route('/api/start_game', methods=['POST'])
 def start_game():
     """Start a new game session"""
-    data = request.get_json()
-    player_name = data.get('player_name', 'Anonymous')
-    
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute(
-        'INSERT INTO games (player_name) VALUES (?)',
-        (player_name,)
-    )
-    game_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'game_id': game_id})
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
+        
+        player_name = data.get('player_name', 'Anonymous')
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'INSERT INTO games (player_name) VALUES (?)',
+                (player_name,)
+            )
+            game_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+        except sqlite3.OperationalError as db_err:
+            err_msg = str(db_err).lower()
+            if 'no such table' in err_msg or 'unable to open database file' in err_msg:
+                print(f"⚠️ Detected missing table/DB, re-initializing...")
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+                try:
+                    init_db()
+                    conn = sqlite3.connect(DATABASE)
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        'INSERT INTO games (player_name) VALUES (?)',
+                        (player_name,)
+                    )
+                    game_id = cursor.lastrowid
+                    conn.commit()
+                    conn.close()
+                except Exception as retry_err:
+                    print(f"❌ start_game retry failed: {retry_err}")
+                    return jsonify({'status': 'error', 'message': 'Database error'}), 500
+            else:
+                print(f"❌ start_game DB error: {db_err}")
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Database error'}), 500
+        
+        return jsonify({'game_id': game_id})
+    except Exception as e:
+        print(f"❌ start_game exception: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/get_dilemma', methods=['GET'])
 def get_dilemma():
@@ -1195,8 +1244,13 @@ def get_achievements(player_name):
         print(f"❌ Error obteniendo logros: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-if __name__ == '__main__':
+try:
     init_db()
+    print(f"✅ Database initialized at: {DATABASE}")
+except Exception as _e:
+    print(f"⚠️ init_db warning: {_e}")
+
+if __name__ == '__main__':
     print("🧠 Ethical Dilemma Simulator starting...")
     print(f"📊 Database initialized: {DATABASE}")
     print(f"🤖 Google Gemini: {'✅ Enabled' if GOOGLE_API_KEY else '❌ Disabled'}")

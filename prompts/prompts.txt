@@ -55,3 +55,8 @@ SECCIÓN 5 — Generación del README
 SECCIÓN 6 - Ordenamiento de Archivo prompt.txt 
 - Prompt utilizado: 
   - Tengo el archivo prompts.txt que ahí coloque los prompts utilizados para generar la app mi consulta es si lo ves bien ordenado si no es el caso podrías ordenarlos?
+
+SECCIÓN 7 - Deploy en Vercel
+
+- Prompt utilizado:
+ - Quisiera saber que es necesario para que la app funcione en Vercel sin dar problema, ya que añadí la API de Gemini en variable de entorno y me retorna el error de esa linea en el catch. Me podrias ayudar a solucionarlo?
